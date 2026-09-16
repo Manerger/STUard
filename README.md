@@ -2,9 +2,7 @@
 
 # 🎓 STUard
 
-**Friendly student verification for the STU MTF Discord server**
-
-Show you belong to STU, and get the right roles and channels automatically.
+**Student verification for the STU MTF Discord server**
 
 ![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-3776AB?logo=python&logoColor=white)
@@ -54,7 +52,7 @@ flowchart TD
 ## 🛡️ Your privacy
 
 - 🔑 **Your password never reaches the bot.** You type it only on STU's own sign-in page.
-- 🧮 **No name, email or AIS ID is stored.** The bot keeps a scrambled one-way fingerprint, only so that one school account can't verify two Discord accounts.
+- 🧮 **No name, email or UIS ID is stored.** The bot keeps a scrambled one-way fingerprint, only so that one school account can't verify two Discord accounts.
 - 🖼️ **Screenshots are deleted** as soon as a moderator decides.
 - 📦 **You're in control.** `/privacy` shows everything the bot keeps about you, and `/forget-me` deletes it.
 
