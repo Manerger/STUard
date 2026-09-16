@@ -1,0 +1,60 @@
+# Required by docker-compose v1 (Raspberry Pi OS bookworm ships 1.29.2).
+# Compose v2 ignores it with an "obsolete" warning, which is harmless.
+version: "3.8"
+
+services:
+  bot:
+    build: .
+    image: stuard:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_PATH: /data/stuard.sqlite3
+      CONFIG_PATH: /app/config.yaml
+      SAML_SP_KEY_FILE: /run/secrets/stuard/sp.key
+      SAML_SP_CERT_FILE: /run/secrets/stuard/sp.crt
+      SAML_IDP_METADATA_FILE: /app/saml/idp_metadata.xml
+      WEB_HOST: 0.0.0.0
+      WEB_PORT: "8080"
+      TRUST_FORWARDED_FOR: "true"
+    volumes:
+      - stuard_data:/data
+      - ./config.yaml:/app/config.yaml:ro
+      - ./saml:/app/saml:ro
+      - ./secrets:/run/secrets/stuard:ro
+    # No host port at all: only cloudflared, on the compose network, can reach the bot.
+    expose:
+      - "8080"
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+  # Cloudflare Tunnel terminates TLS and reaches the bot over the compose network,
+  # so nothing is published on the host and no router port is opened.
+  # Use a tunnel of its own: sharing a token with another tunnel makes Cloudflare
+  # load-balance both as replicas, and this container cannot serve the other's hostnames.
+  # In Zero Trust the public hostname points at  http://bot:8080 .
+  cloudflared:
+    # Not pinned on purpose: Cloudflare retires old tunnel clients, so track the current one.
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    depends_on:
+      - bot
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?set CLOUDFLARE_TUNNEL_TOKEN in .env (Zero Trust -> Networks -> Tunnels)}
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+# To run without Cloudflare, delete the cloudflared service, restore the caddy
+# service from Caddyfile, and publish 80/443 instead.
+
+volumes:
+  stuard_data:

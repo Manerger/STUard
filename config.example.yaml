@@ -1,0 +1,132 @@
+# ---------------------------------------------------------------------------
+# STUard configuration (non-secret). Copy to config.yaml and fill it in.
+# Role IDs: Discord Settings → Advanced → Developer Mode, then right-click → "Copy ID".
+# Reload without restart: /setup reload-config
+# ---------------------------------------------------------------------------
+
+timezone: Europe/Bratislava
+
+# Shown in the privacy notice (/privacy and https://<host>/privacy). Who runs the server and how to reach them.
+privacy_contact: ""
+
+# Members with any of these roles can use /mod commands and the review buttons.
+moderator_role_ids: []
+# Members with any of these roles (or the Administrator permission) can use /setup, /admin and /mod lookup.
+# e.g. the ID of your "Server admin" role: [123456789012345678]
+admin_role_ids: []
+
+channels:
+  # Each entry is a channel name or a channel ID.
+  mod_review: admin_room_verifikacie  # private: verification requests + screenshots (deleted after a decision)
+  audit: null         # private log channel (never contains screenshots or school logins)
+  verify: null        # public channel for the verification panel (/setup panels)
+  study_panel: null   # channel for the "Nastaviť štúdium" panel (/setup panels)
+
+# Identity roles. Keys are fixed; names are what /setup roles creates or links.
+roles:
+  verified:       { name: "Overený" }
+  student:        { name: "Študent", color: "#1f77b4", hoist: true }
+  applicant:      { name: "Uchádzač", color: "#9467bd", hoist: true }
+  teacher:        { name: "Vyučujúci", color: "#d62728", hoist: true }
+  alumni:         { name: "Absolvent", color: "#2ca02c", hoist: true }
+  former_student: { name: "Bývalý študent", color: "#7f7f7f" }
+
+microsoft:
+  # Main login: "Prihlásiť sa cez Microsoft 365" with the STU school account (@stuba.sk).
+  # STU's Microsoft 365 hands the password step to idp.stuba.sk, so the bot never sees it.
+  # Needs MICROSOFT_CLIENT_ID / MICROSOFT_CLIENT_SECRET in .env (README section 3).
+  # After sign-in the bot reads the AIS ID (employeeId) and account type (employeeType) from Microsoft Graph.
+  # If Microsoft shows "Need admin approval", STU requires administrator review of third-party apps:
+  # switch this off and use manual review. Allowing the app is STU IT's decision.
+  enabled: true
+  tenant_id: 25733538-6b16-4aa3-8ed6-297eb79b8e06   # STU (login.microsoftonline.com/stuba.sk)
+  allowed_domains: [stuba.sk]
+  student_types: [student]                    # employeeType values that give Študent
+  teacher_types: [employee, staff, faculty]   # moderator review for Vyučujúci (never automatic); STU's value is unconfirmed
+  unmatched: manual_review                    # other or missing employeeType: manual_review | student
+  show_login_to_moderators: true              # show the school login in review requests (deleted after the decision)
+
+sso:
+  # Optional second login: "Prihlásiť sa cez STU" (idp.stuba.sk). Works only if STU IT or safeID decide to register the bot.
+  enabled: false
+  allowed_scopes: [stuba.sk]
+  identity_attribute: eppn          # eppn (= AIS ID@stuba.sk, same identifier as Microsoft) | pairwise_id | persistent_nameid
+  force_authn: true                 # always ask for the password (shared lab PCs)
+  # Entity categories the bot asks for in its SP metadata; the federation (safeID) decides which to grant.
+  #   https://refeds.org/category/pseudonymous       – pairwise-id + affiliation, no login, name or e-mail
+  #                                                    (use together with identity_attribute: pairwise_id)
+  #   https://refeds.org/category/code-of-conduct/v2 – adds eduPersonPrincipalName (= AIS ID@stuba.sk)
+  entity_categories: []
+  display_name: "STUard – overenie MTF STU"
+  description: "Overenie členov Discord servera študentov MTF STU."
+  status_rules:                     # first match wins
+    - { any_of: [student], status: student }
+    - { any_of: [alum], status: alumni }
+    - { any_of: [affiliate], action: manual_review, suggest: applicant }
+  teacher_affiliations: [faculty, staff, employee]   # never automatic — creates a moderator review
+  unmatched: manual_review          # manual_review | reject
+  log_unmapped_values: true         # audit raw affiliation values
+
+manual:
+  # Screenshot review in channels.mod_review — the way in for applicants.
+  # always | when_sso_disabled (only while no automatic login is on) | off
+  mode: always
+  max_bytes: 8000000
+  reject_cooldown_hours: 24
+  expire_days: 7
+
+reverify:
+  enabled: true
+  applies_to: [student, applicant]
+  window_start: "09-20"             # MM-DD, re-verification opens (after zápis)
+  deadline: "10-31"                 # MM-DD, end of day in `timezone`
+  reminders_days_before: [30, 14, 3]
+  on_expired:
+    student: former_student
+    applicant: unverified
+
+retention:
+  flows_hours: 24
+  left_member_days: 30
+  audit_days: 180
+  tombstone_days: 30                # 0 disables the anti account-hopping block after /forget-me
+
+study:
+  allowed_statuses: [student]
+  # /setup roles links roles that already exist on the server with the same name (ignoring case)
+  # instead of creating duplicates.
+  role_names:
+    degree: null                        # no separate "Bc."/"Ing." roles – the year roles already contain the degree
+    programme: "{degree} {programme}"   # e.g. "Bc. Mechatronika"
+    year: "{degree} {year}. ročník"     # used only for degrees without their own year_role
+  degrees:
+    bc:  { label: "Bc.",  years: 3, year_role: "{year}-BC" }    # 1-BC, 2-BC, 3-BC
+    ing: { label: "Ing.", years: 2, year_role: "{year}-ing" }   # 1-ing, 2-ing
+    phd: { label: "PhD.", years: 4, year_role: "{year}-PhD" }   # 1-PhD … 4-PhD
+  programmes:
+    - { id: bc-piar, degree: bc, name: "Priemyselná informatika, automatizácia a robotika" }
+    - { id: bc-mech, degree: bc, name: "Mechatronika" }
+    - { id: bc-ppvt, degree: bc, name: "Počítačová podpora výrobných technológií a robotizovaných systémov" }
+    - { id: bc-svi,  degree: bc, name: "Smart výrobné inžinierstvo" }
+    - { id: bc-pm,   degree: bc, name: "Priemyselný manažment" }
+    - { id: bc-bem,  degree: bc, name: "Bezpečnostný a environmentálny manažment" }
+    - { id: bc-mi,   degree: bc, name: "Materiálové inžinierstvo" }
+
+    - { id: ing-piar,   degree: ing, name: "Priemyselná informatika, automatizácia a robotika" }
+    - { id: ing-ppnv,   degree: ing, name: "Počítačová podpora návrhu a výroby" }
+    - { id: ing-svi,    degree: ing, name: "Smart výrobné inžinierstvo" }
+    - { id: ing-piam,   degree: ing, name: "Priemyselné inžinierstvo a manažment" }
+    - { id: ing-bem,    degree: ing, name: "Bezpečnostný a environmentálny manažment" }
+    - { id: ing-mi,     degree: ing, name: "Materiálové inžinierstvo" }
+    - { id: ing-met-en, degree: ing, lang: en, name: "Materials Engineering and Technologies" }
+
+    - { id: phd-piar,  degree: phd, name: "Priemyselná informatika, automatizácia a robotika" }
+    - { id: phd-st,    degree: phd, name: "Strojárske technológie" }
+    - { id: phd-piams, degree: phd, name: "Priemyselné inžinierstvo a manažérske systémy" }
+    - { id: phd-bem,   degree: phd, name: "Bezpečnostný a environmentálny manažment" }
+    - { id: phd-mvi,   degree: phd, name: "Materiálové vedy a inžinierstvo" }
+    - { id: phd-iiar-en, degree: phd, lang: en, role_group: phd-piar,  name: "Industrial Informatics, Automation and Robotics" }
+    - { id: phd-met-en,  degree: phd, lang: en, role_group: phd-st,    name: "Mechanical Engineering Technologies" }
+    - { id: phd-iems-en, degree: phd, lang: en, role_group: phd-piams, name: "Industrial Engineering and Management Systems" }
+    - { id: phd-sem-en,  degree: phd, lang: en, role_group: phd-bem,   name: "Safety and Environmental Management" }
+    - { id: phd-mse-en,  degree: phd, lang: en, role_group: phd-mvi,   name: "Materials Science and Engineering" }

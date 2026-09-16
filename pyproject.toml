@@ -1,0 +1,64 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "stuard"
+version = "0.1.0"
+description = "Discord verification and role bot for STU MTF (SAML SSO via idp.stuba.sk + moderator review)"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+dependencies = [
+  "discord.py>=2.7,<3",
+  "aiohttp>=3.10,<4",
+  "aiosqlite>=0.20",
+  "python3-saml==1.16.0",
+  "pydantic>=2.7,<3",
+  "pydantic-settings>=2.4,<3",
+  "PyYAML>=6.0.2",
+  "jinja2>=3.1",
+  "tzdata>=2024.1",
+  "PyJWT[crypto]>=2.9",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8",
+  "pytest-asyncio>=0.24",
+  "pytest-aiohttp>=1.0",
+  "cryptography>=43",
+  "ruff>=0.6",
+]
+
+[project.scripts]
+stuard = "stuard.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/stuard"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+filterwarnings = [
+  "ignore::DeprecationWarning:onelogin.*",
+  "ignore::DeprecationWarning:xmlsec.*",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S", "ASYNC"]
+ignore = ["S101"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["stuard", "dev", "tests"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "S105", "S106", "S311"]
+"dev/*" = ["S"]
+"scripts/*" = ["S310"]

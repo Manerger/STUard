@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ title }}</h1>
+<p>{{ text }}</p>
+<div class="who">
+{% if avatar %}
+<img src="{{ avatar }}" alt="" width="64" height="64">
+{% endif %}
+<strong>{{ name }}</strong>
+</div>
+<p class="note">{{ warning }}</p>
+<form method="post" action="/v/confirm">
+<button type="submit">{{ button }}</button>
+</form>
+{% endblock %}

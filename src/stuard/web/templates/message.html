@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="{{ 'ok' if success else 'warn' }}">{{ title }}</h1>
+<p>{{ body }}</p>
+{% if extra %}
+<p>{{ extra }}</p>
+{% endif %}
+{% endblock %}
