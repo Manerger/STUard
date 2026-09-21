@@ -140,7 +140,7 @@ class SetupCog(commands.GroupCog, group_name="setup", group_description="Nastave
         await interaction.response.defer(ephemeral=True, thinking=True)
         posted = []
         panels = (
-            ("verify", verify_panel_embed(), VerifyPanelView()),
+            ("verify", verify_panel_embed(self.bot), VerifyPanelView()),
             ("study_panel", study_panel_embed(), StudyPanelView()),
         )
         for key, embed, view in panels:

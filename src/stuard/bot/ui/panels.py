@@ -23,8 +23,14 @@ async def send_verify_prompt(interaction: discord.Interaction) -> None:
         verification.microsoft_enabled(),
         verification.manual_available(),
     )
+    email = bot.email.enabled()
     if not (sso or microsoft):
-        await interaction.response.send_message(T.VERIFY_USE_MANUAL if manual else T.VERIFY_DISABLED, ephemeral=True)
+        # No link-based login on; point to whichever self-service methods are enabled.
+        alternatives = [line for on, line in ((email, T.VERIFY_OPTION_EMAIL), (manual, T.VERIFY_OPTION_MANUAL)) if on]
+        if alternatives:
+            await interaction.response.send_message("\n".join([T.VERIFY_NO_LINK_LOGIN, *alternatives]), ephemeral=True)
+        else:
+            await interaction.response.send_message(T.VERIFY_DISABLED, ephemeral=True)
         return
 
     key = str(interaction.user.id)
@@ -45,14 +51,32 @@ async def send_verify_prompt(interaction: discord.Interaction) -> None:
             discord.ui.Button(label=T.VERIFY_MICROSOFT_BUTTON, url=f"{url}&m=microsoft", style=discord.ButtonStyle.link)
         )
         lines.append(T.VERIFY_OPTION_MICROSOFT)
+    if email:
+        lines.append(T.VERIFY_OPTION_EMAIL)
     if manual:
         lines.append(T.VERIFY_OPTION_MANUAL)
     lines.append(T.VERIFY_LINK_FOOTER.format(minutes=LINK_TTL_SECONDS // 60))
     await interaction.followup.send("\n".join(lines), view=view, ephemeral=True)
 
 
-def verify_panel_embed() -> discord.Embed:
-    return discord.Embed(title=T.VERIFY_PANEL_TITLE, description=T.VERIFY_PANEL_TEXT, colour=discord.Colour.blurple())
+def verify_panel_embed(bot: Any) -> discord.Embed:
+    """Panel shown in the verify channel; lists only the verification methods that are currently enabled."""
+    verification = bot.verification
+    options = [
+        line
+        for on, line in (
+            (verification.sso_enabled(), T.VERIFY_OPTION_STU),
+            (verification.microsoft_enabled(), T.VERIFY_OPTION_MICROSOFT),
+            (bot.email.enabled(), T.VERIFY_OPTION_EMAIL),
+            (verification.manual_available(), T.VERIFY_OPTION_MANUAL),
+        )
+        if on
+    ]
+    if options:
+        description = "\n".join([T.VERIFY_PANEL_INTRO, *options, "", T.VERIFY_PANEL_FOOTER])
+    else:
+        description = T.VERIFY_PANEL_NONE
+    return discord.Embed(title=T.VERIFY_PANEL_TITLE, description=description, colour=discord.Colour.blurple())
 
 
 def study_panel_embed() -> discord.Embed:

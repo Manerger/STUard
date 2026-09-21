@@ -50,18 +50,24 @@ VERIFY_OPTION_MICROSOFT = (
     "• **Prihlásiť sa cez Microsoft 365** – školské konto @stuba.sk. Ak Microsoft napíše, že je potrebné "
     "schválenie správcu, STU to nepovoľuje – použi manuálne overenie."
 )
+VERIFY_OPTION_EMAIL = (
+    "• **E-mailom** – príkaz `/verify-email` pošle jednorazový kód na tvoj školský e-mail "
+    "(@stuba.sk), ktorý potvrdíš príkazom `/verify-code` (pre študentov)."
+)
 VERIFY_OPTION_MANUAL = "• **Manuálne** – príkaz `/verify-manual` so snímkou z UIS (napr. uchádzači)."
 VERIFY_LINK_FOOTER = "Odkazy platia {minutes} minút, fungujú iba raz a sú len pre teba. **Nikomu ich neposielaj.**"
+VERIFY_NO_LINK_LOGIN = "Automatické prihlásenie (STU / Microsoft) zatiaľ nie je zapnuté. Použi jednu z týchto možností:"
 VERIFY_LINK_BUTTON = "Prihlásiť sa cez STU"
 VERIFY_MICROSOFT_BUTTON = "Prihlásiť sa cez Microsoft 365"
 VERIFY_RATE_LIMITED = "Príliš veľa pokusov. Skús to znova o {minutes} min."
 VERIFY_DISABLED = "Overovanie je momentálne vypnuté. Kontaktuj moderátorov."
 VERIFY_PANEL_TITLE = "Overenie – MTF STU"
-VERIFY_PANEL_TEXT = (
-    "Pre prístup na server sa over školským kontom **Microsoft 365 (STU)** alebo snímkou z **UIS**.\n"
-    "Heslo zadávaš iba na stránke STU – bot ho nikdy nevidí ani neukladá.\n"
-    "Klikni na **Overiť sa** alebo použi príkaz **/verify**."
+VERIFY_PANEL_INTRO = "Pre prístup na server sa over. K dispozícii máš tieto možnosti:"
+VERIFY_PANEL_FOOTER = (
+    "Heslo zadávaš iba na stránke STU alebo Microsoftu – bot ho nikdy nevidí ani neukladá.\n"
+    "Klikni na tlačidlo nižšie alebo použi uvedený príkaz."
 )
+VERIFY_PANEL_NONE = "Overovanie je momentálne vypnuté. Kontaktuj moderátorov."
 VERIFY_PANEL_BUTTON = "Overiť sa"
 MANUAL_PANEL_BUTTON = "Manuálne overenie"
 
