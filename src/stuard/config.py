@@ -344,6 +344,10 @@ class AppConfig(_Model):
     reverify: ReverifyCfg = Field(default_factory=ReverifyCfg)
     retention: RetentionCfg = Field(default_factory=RetentionCfg)
     study: StudyCfg
+    # Identity role key given to members with no verified status (e.g. after /forget-me). Pair it with an
+    # external auto-role bot (Carl-bot) that assigns the same role on join: verifying removes it, /forget-me
+    # restores it. null keeps the default (unverified members get no STUard role).
+    newcomer_role: str | None = None
 
     @field_validator("timezone")
     @classmethod
@@ -365,6 +369,9 @@ class AppConfig(_Model):
         clashes = duplicate_names([r.name for r in self.roles.values()] + self.study.role_name_list())
         if clashes:
             raise ValueError(f"role names must be unique (case-insensitive): {clashes[0]!r}")
+        if self.newcomer_role is not None and self.newcomer_role not in STATUS_ROLE_KEYS.values():
+            allowed = sorted(set(STATUS_ROLE_KEYS.values()))
+            raise ValueError(f"newcomer_role must be one of {allowed} or null")
         return self
 
     @property

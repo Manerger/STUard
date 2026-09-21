@@ -56,7 +56,9 @@ class RoleService:
     async def target_keys(self, user_id: int) -> set[str]:
         member = await self.bot.repo.get_member(user_id)
         if member is None:
-            return set()
+            # No record (never verified, or wiped by /forget-me): treat as unverified so the newcomer role, if
+            # configured, is (re)assigned — the rest of the managed roles are removed as before.
+            return target_role_keys("unverified", False, None, self.bot.cfg)
         study = await self.bot.repo.get_study(user_id)
         return target_role_keys(member.status, member.is_teacher, study, self.bot.cfg)
 
