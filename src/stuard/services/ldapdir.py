@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import ssl
+from time import perf_counter
 
 from stuard.config import LdapCfg
 
@@ -58,3 +59,27 @@ class LdapDirectory:
         if len(entries) != 1:
             return None
         return {attr: entries[0][attr].values for attr in entries[0].entry_attributes}
+
+    def ping(self) -> tuple[bool, str]:
+        """Check reachability: anonymous LDAPS bind + a base-object read. Reads no person's record.
+
+        Returns (ok, detail). Blocking; call from a thread.
+        """
+        try:
+            import ldap3  # noqa: PLC0415 - lazy: only the real probe needs the dependency
+        except ImportError:
+            return False, "ldap3 nie je nainštalovaný"
+        tls = ldap3.Tls(validate=ssl.CERT_NONE, ciphers=_LDAP_CIPHERS)
+        started = perf_counter()
+        try:
+            server = ldap3.Server(
+                self.cfg.url, connect_timeout=self.cfg.timeout_seconds, get_info=None, use_ssl=True, tls=tls
+            )
+            conn = ldap3.Connection(server, auto_bind=True, receive_timeout=self.cfg.timeout_seconds)
+            try:
+                conn.search(self.cfg.base_dn, "(objectClass=*)", search_scope=ldap3.BASE, attributes=[])
+            finally:
+                conn.unbind()
+        except Exception as exc:  # noqa: BLE001 - report the reason to the admin
+            return False, f"{type(exc).__name__}: {exc}"[:250]
+        return True, f"bind + čítanie base OK za {int((perf_counter() - started) * 1000)} ms"

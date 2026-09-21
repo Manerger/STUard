@@ -263,6 +263,17 @@ ADMIN_MANUAL_SET = (
     "Prepínač manuálneho overenia: **{state}**. Aktuálne je manuálne overenie **{effective}**.\n"
     "Keď je vypnuté, každý sa musí prihlásiť (Microsoft/STU/e-mail); manuálne zapni len keď treba overiť vyučujúceho."
 )
+ADMIN_LDAP_STATUS = (
+    "**LDAP obohacovanie**\n"
+    "Stav: **{enabled}**\n"
+    "Server: `{url}`\n"
+    "Base DN: `{base_dn}`\n"
+    "Fakulty pre rolu Študent: {faculties} (ostatní študenti STU dostanú rolu Outsider)\n"
+    "Test spojenia: {probe}"
+)
+ADMIN_LDAP_OK = "✅ {detail}"
+ADMIN_LDAP_FAIL = "❌ nedostupné — {detail}\n(Beží sidecar `stuvpn`? `docker-compose --profile ldap up -d stuvpn`)"
+ADMIN_LDAP_DISABLED = "vypnuté v configu (`email.ldap.enabled: false`) – test spojenia sa nespúšťa."
 ADMIN_REVERIFY_STATUS = (
     "Opätovné overenie: **{enabled}** · najbližší termín: **{deadline}** · "
     "členov s termínom: {count} · po termíne: {overdue}"

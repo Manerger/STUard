@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from stuard.config import AppConfig
+from stuard.config import AppConfig, LdapCfg
 from stuard.domain.ldap_map import map_ldap_person, parse_person
+from stuard.services.ldapdir import LdapDirectory
 
 # The real MTF student record shape (from an anonymous ldapsearch of the user's own entry).
 MTF_STUDENT = {
@@ -68,3 +69,9 @@ def test_faculty_gate_can_be_disabled(cfg: AppConfig) -> None:
     fei = {"uid": ["xfei"], "employeeType": ["student"], "host": ["fei-stud"]}
     result = map_ldap_person(parse_person(fei), lenient)
     assert result.status == "student"
+
+
+def test_ping_returns_bool_and_reason() -> None:
+    # No network / ldap3 in tests: ping must fail gracefully with a (bool, detail) result, never raise.
+    ok, detail = LdapDirectory(LdapCfg(enabled=True, timeout_seconds=1)).ping()
+    assert ok is False and isinstance(detail, str) and detail

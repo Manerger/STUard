@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from asyncio import to_thread
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -12,6 +13,7 @@ from stuard import texts as T
 from stuard.bot.checks import admin_only
 from stuard.bot.ui.panels import StudyPanelView, VerifyPanelView, study_panel_embed, verify_panel_embed
 from stuard.domain.lifecycle import deadline_for_year
+from stuard.services.ldapdir import LdapDirectory
 from stuard.timeutil import now_ts
 
 if TYPE_CHECKING:
@@ -236,6 +238,26 @@ class AdminCog(commands.GroupCog, group_name="admin", group_description="Správa
             state=state.name, effective=_on_off(self.bot.verification.manual_available())
         )
         await interaction.response.send_message(text, ephemeral=True)
+
+    @app_commands.command(name="ldap-status", description="Stav LDAP obohacovania a živý test spojenia so smerníkom")
+    @admin_only()
+    async def ldap_status(self, interaction: discord.Interaction) -> None:
+        ldap = self.bot.cfg.email.ldap
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        if ldap.enabled:
+            ok, detail = await to_thread(LdapDirectory(ldap).ping)
+            probe = T.ADMIN_LDAP_OK.format(detail=detail) if ok else T.ADMIN_LDAP_FAIL.format(detail=detail)
+        else:
+            probe = T.ADMIN_LDAP_DISABLED
+        faculties = ", ".join(self.bot.cfg.email.allowed_faculties) or "(všetky)"
+        text = T.ADMIN_LDAP_STATUS.format(
+            enabled=_on_off(ldap.enabled),
+            url=ldap.url,
+            base_dn=ldap.base_dn,
+            faculties=faculties,
+            probe=probe,
+        )
+        await interaction.followup.send(text, ephemeral=True)
 
     @app_commands.command(name="reverify-status", description="Prehľad ročného obnovenia overenia")
     @admin_only()
