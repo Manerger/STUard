@@ -14,8 +14,8 @@ def test_example_config_loads(cfg: AppConfig) -> None:
     assert len(cfg.study.programmes) == 24
     assert set(cfg.study.degrees) == {"bc", "ing", "phd"}
     assert cfg.sso.enabled is False
-    # 6 identity + 9 year + 19 programme roles (EN PhD programmes share SK roles; no separate degree roles)
-    assert len(role_specs(cfg)) == 34
+    # 7 identity + 9 year + 19 programme roles (EN PhD programmes share SK roles; no separate degree roles)
+    assert len(role_specs(cfg)) == 35
 
 
 def _set_role_group(data: dict[str, Any]) -> None:

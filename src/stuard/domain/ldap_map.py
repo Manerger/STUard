@@ -65,12 +65,16 @@ def parse_person(attrs: dict[str, object]) -> LdapPerson:
 
 def map_ldap_person(person: LdapPerson, cfg: EmailCfg) -> MappingResult:
     """Faculty gate + employeeType → status. Vyučujúci is never assigned automatically (always a review)."""
+    value = (person.employee_type or "").strip().lower()
+    is_student = bool(value and value in {t.lower() for t in cfg.student_types})
     if cfg.allowed_faculties:
         allowed = {f.lower() for f in cfg.allowed_faculties}
         if not (person.faculties & allowed):
-            return MappingResult(None, False, None, False, True)  # rejected: another faculty
-    value = (person.employee_type or "").strip().lower()
-    if value and value in {t.lower() for t in cfg.student_types}:
+            # Another faculty: a real STU student still gets in as Outsider; anyone else is rejected.
+            if is_student:
+                return MappingResult("outsider", False, None, False, False)
+            return MappingResult(None, False, None, False, True)  # rejected
+    if is_student:
         return MappingResult("student", False, None, False, False)
     if value and value in {t.lower() for t in cfg.teacher_types}:
         return MappingResult(None, False, None, True, False)  # teacher review

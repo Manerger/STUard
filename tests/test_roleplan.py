@@ -39,6 +39,12 @@ def test_former_student_loses_study_roles_but_stays_verified(cfg: AppConfig) -> 
     assert keys == {"former_student", "verified"}
 
 
+def test_outsider_is_verified_without_study_roles(cfg: AppConfig) -> None:
+    # STU student from another faculty: verified access + the Outsider role, but no MTF study roles.
+    keys = target_role_keys("outsider", False, StudySel("bc", "bc-mech", 2), cfg)
+    assert keys == {"outsider", "verified"}
+
+
 def test_applicant_and_alumni_have_no_study_roles(cfg: AppConfig) -> None:
     study = StudySel("ing", "ing-mi", 1)
     assert target_role_keys("applicant", False, study, cfg) == {"applicant", "verified"}

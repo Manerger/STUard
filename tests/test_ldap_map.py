@@ -39,10 +39,16 @@ def test_mtf_student_maps_to_student(cfg: AppConfig) -> None:
     assert result.status == "student" and not result.rejected and not result.review
 
 
-def test_other_faculty_is_rejected(cfg: AppConfig) -> None:
+def test_other_faculty_student_becomes_outsider(cfg: AppConfig) -> None:
     fei = {"uid": ["xfei"], "employeeType": ["student"], "host": ["fei-stud"], "accountStatus": ["fei-stud:active"]}
     result = map_ldap_person(parse_person(fei), cfg.email)
-    assert result.rejected is True  # allowed_faculties = [MTF]
+    assert result.status == "outsider" and not result.rejected  # STU student from another faculty
+
+
+def test_other_faculty_non_student_is_rejected(cfg: AppConfig) -> None:
+    staff = {"uid": ["xz"], "employeeType": ["employee"], "host": ["fei-zam"], "accountStatus": ["fei-zam:active"]}
+    result = map_ldap_person(parse_person(staff), cfg.email)
+    assert result.rejected is True  # not a student and not MTF
 
 
 def test_staff_gets_teacher_review_never_auto(cfg: AppConfig) -> None:

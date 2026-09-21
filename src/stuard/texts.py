@@ -21,6 +21,7 @@ LABELS: dict[str, str] = {
     "unverified": "neoverený",
     "applicant": "Uchádzač",
     "student": "Študent",
+    "outsider": "Outsider",
     "former_student": "Bývalý študent",
     "alumni": "Absolvent",
     "teacher": "Vyučujúci",
@@ -130,6 +131,9 @@ EMAIL_TOMBSTONED = (
     "{duration} nedá znova prepojiť — skús to potom znova, alebo napíš moderátorom, ktorí ťa vedia hneď pustiť."
 )
 EMAIL_VERIFIED = "Overené ✅ Máš rolu **Študent**. Program a ročník si nastav cez /profile."
+EMAIL_OUTSIDER_VERIFIED = (
+    "Overené ✅ Si študent inej fakulty STU, takže máš rolu **Outsider** (nie MTF Študent). Vitaj na serveri!"
+)
 EMAIL_TEACHER_PENDING = "Overené ✅ Žiadosť o rolu **Vyučujúci** dostali moderátori, výsledok ti pošlem správou."
 EMAIL_REVIEW_PENDING = "E-mail overený ✅ Rolu ešte potvrdí moderátor, výsledok ti pošlem správou."
 

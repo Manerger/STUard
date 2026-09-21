@@ -30,6 +30,7 @@ roles:
   teacher:        { name: "Vyučujúci", color: "#d62728", hoist: true }
   alumni:         { name: "Absolvent", color: "#2ca02c", hoist: true }
   former_student: { name: "Bývalý študent", color: "#7f7f7f" }
+  outsider:       { name: "Outsider", color: "#8c564b", hoist: true }   # verified STU student from another faculty (LDAP)
 
 microsoft:
   # Main login: "Prihlásiť sa cez Microsoft 365" with the STU school account (@stuba.sk).
@@ -91,7 +92,8 @@ email:
     base_dn: "ou=People,dc=stuba,dc=sk"
     login_attribute: uid
     timeout_seconds: 10
-  allowed_faculties: [MTF]          # with LDAP: only these faculties auto-verify ([] = any)
+  allowed_faculties: [MTF]          # with LDAP: only these faculties become Študent ([] = any); STU students
+                                    # from other faculties get the Outsider role instead of being rejected
   student_types: [student]          # LDAP employeeType → Študent
   teacher_types: [employee, staff, faculty, researcher]   # → moderator review (never automatic)
   unmatched: manual_review          # LDAP present, type not recognized: manual_review | student

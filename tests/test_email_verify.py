@@ -130,13 +130,29 @@ async def test_ldap_student_verifies(repo: Repo, cfg: AppConfig) -> None:
     assert (await repo.get_identity_by_subject(expected)) is not None
 
 
-async def test_ldap_other_faculty_rejected_before_sending(repo: Repo, cfg: AppConfig) -> None:
+async def test_ldap_other_faculty_student_becomes_outsider(repo: Repo, cfg: AppConfig) -> None:
     out = Outbox()
     bot = make_bot(repo, cfg, ldap=True)
-    fei = {"uid": ["xfei"], "employeeType": ["student"], "host": ["fei-stud"], "accountStatus": ["fei-stud:active"]}
-    msg = await service(bot, out, lookup=lambda _login: fei).request_code(namespace(id=1), "xfei")
+    fei = {
+        "uid": ["xfei"], "employeeType": ["student"], "host": ["fei-stud"],
+        "accountStatus": ["fei-stud:active"], "mail": ["xfei@stuba.sk"],
+    }
+    svc = service(bot, out, lookup=lambda _login: fei)
+    msg = await svc.request_code(namespace(id=1), "xfei")
+    assert "xf***@stuba.sk" in msg and out.sent[0][0] == "xfei@stuba.sk"  # code sent to the STU mailbox
+    result = await svc.submit_code(namespace(id=1), out.last_code)
+    assert "Outsider" in result
+    member = await repo.get_member(1)
+    assert member is not None and member.status == "outsider"
+
+
+async def test_ldap_other_faculty_non_student_rejected_before_sending(repo: Repo, cfg: AppConfig) -> None:
+    out = Outbox()
+    bot = make_bot(repo, cfg, ldap=True)
+    staff = {"uid": ["xzamest"], "employeeType": ["employee"], "host": ["fei-zam"], "accountStatus": ["fei-zam:active"]}
+    msg = await service(bot, out, lookup=lambda _login: staff).request_code(namespace(id=1), "xzamest")
     assert "nie si študentom MTF" in msg
-    assert out.sent == []  # no code sent to a non-MTF account
+    assert out.sent == []  # no code sent to a rejected account
 
 
 async def test_ldap_login_not_found(repo: Repo, cfg: AppConfig) -> None:

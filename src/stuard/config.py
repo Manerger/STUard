@@ -12,15 +12,24 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-Status = Literal["unverified", "applicant", "student", "former_student", "alumni"]
-STATUSES: tuple[str, ...] = ("unverified", "applicant", "student", "former_student", "alumni")
-IDENTITY_ROLE_KEYS: tuple[str, ...] = ("verified", "student", "applicant", "teacher", "alumni", "former_student")
+Status = Literal["unverified", "applicant", "student", "outsider", "former_student", "alumni"]
+STATUSES: tuple[str, ...] = ("unverified", "applicant", "student", "outsider", "former_student", "alumni")
+IDENTITY_ROLE_KEYS: tuple[str, ...] = (
+    "verified",
+    "student",
+    "applicant",
+    "teacher",
+    "alumni",
+    "former_student",
+    "outsider",
+)
 # Status → identity role key ("unverified" has no role).
 STATUS_ROLE_KEYS: dict[str, str] = {
     "student": "student",
     "applicant": "applicant",
     "alumni": "alumni",
     "former_student": "former_student",
+    "outsider": "outsider",
 }
 DISCORD_SELECT_LIMIT = 25
 DISCORD_NAME_LIMIT = 100

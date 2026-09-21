@@ -101,7 +101,10 @@ class EmailVerifyService:
             result = map_ldap_person(person, cfg)
             if result.rejected:
                 return T.EMAIL_REJECTED
-            outcome = "student" if result.status == "student" else ("teacher" if result.teacher_candidate else "review")
+            if result.status in ("student", "outsider"):
+                outcome = result.status
+            else:
+                outcome = "teacher" if result.teacher_candidate else "review"
             to = person.email or f"{login}@{domain}"
             subject_id = person.ais_id or login
         else:
@@ -161,18 +164,19 @@ class EmailVerifyService:
         if bound == "tombstoned":
             return T.EMAIL_TOMBSTONED.format(duration=T.days_sk(bot.cfg.retention.tombstone_days))
 
-        if row.outcome == "student":
+        if row.outcome in ("student", "outsider"):
+            status = "student" if row.outcome == "student" else "outsider"
             await bot.repo.set_member_status(
                 member.id,
-                status="student",
+                status=status,
                 method=None,  # 'email' is not in the members.method CHECK; the audit log records the method
                 now=now,
-                valid_until=bot.members.valid_until_for("student", now),
+                valid_until=bot.members.valid_until_for(status, now),
                 mark_verified=True,
             )
             await bot.roles.sync_user(member.id, reason="STUard: overenie e-mailovým kódom")
-            await bot.audit.log("verified_email", target_id=member.id, detail={"to": "student"})
-            return T.EMAIL_VERIFIED
+            await bot.audit.log("verified_email", target_id=member.id, detail={"to": status})
+            return T.EMAIL_VERIFIED if status == "student" else T.EMAIL_OUTSIDER_VERIFIED
         if row.outcome == "teacher":
             await bot.reviews.open_sso_review(member.id, "sso_teacher", (), suggest="teacher", via="email")
             await bot.audit.log("verified_email", target_id=member.id, detail={"to": "teacher_review"})
