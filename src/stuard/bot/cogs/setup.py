@@ -103,7 +103,13 @@ class SetupCog(commands.GroupCog, group_name="setup", group_description="Nastave
                 ldap=_on_off(bot.cfg.email.ldap.enabled),
             )
         )
-        lines.append(T.SETUP_MANUAL_STATE.format(state=_on_off(verification.manual_available())))
+        lines.append(
+            T.SETUP_MANUAL_STATE.format(
+                state=_on_off(verification.manual_available()),
+                mode=bot.cfg.manual.mode,
+                override=_state(bot.manual_override),
+            )
+        )
         lines.append(f"SP metadáta: {bot.settings.public_base_url}/saml/metadata")
         embed = discord.Embed(title=T.SETUP_CHECK_TITLE, description="\n".join(lines)[:4000])
         await interaction.followup.send(embed=embed, ephemeral=True)
@@ -215,6 +221,20 @@ class AdminCog(commands.GroupCog, group_name="admin", group_description="Správa
         await self.bot.set_email_override(OVERRIDE_VALUES[state.value])
         await self.bot.audit.log("email_override", actor_id=interaction.user.id, detail={"state": state.value})
         text = T.ADMIN_EMAIL_SET.format(state=state.name, effective=_on_off(self.bot.email.enabled()))
+        await interaction.response.send_message(text, ephemeral=True)
+
+    @app_commands.command(
+        name="manual", description="Zapnúť alebo vypnúť manuálne overenie (snímka) bez úpravy configu"
+    )
+    @app_commands.describe(state="Nový stav")
+    @app_commands.choices(state=OVERRIDE_CHOICES)
+    @admin_only()
+    async def manual(self, interaction: discord.Interaction, state: app_commands.Choice[str]) -> None:
+        await self.bot.set_manual_override(OVERRIDE_VALUES[state.value])
+        await self.bot.audit.log("manual_override", actor_id=interaction.user.id, detail={"state": state.value})
+        text = T.ADMIN_MANUAL_SET.format(
+            state=state.name, effective=_on_off(self.bot.verification.manual_available())
+        )
         await interaction.response.send_message(text, ephemeral=True)
 
     @app_commands.command(name="reverify-status", description="Prehľad ročného obnovenia overenia")

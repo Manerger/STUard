@@ -79,6 +79,7 @@ class FakeBot:
         self.sso_override: bool | None = None
         self.microsoft_override: bool | None = None
         self.email_override: bool | None = None
+        self.manual_override: bool | None = None
         self.verify_limiter = RateLimiter(5, 900)
         self.guild = None
         self.audit = FakeAudit()

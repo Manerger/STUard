@@ -43,6 +43,7 @@ EXTENSIONS = (
 SSO_OVERRIDE_KEY = "sso_enabled_override"
 MICROSOFT_OVERRIDE_KEY = "microsoft_enabled_override"
 EMAIL_OVERRIDE_KEY = "email_enabled_override"
+MANUAL_OVERRIDE_KEY = "manual_enabled_override"
 
 
 class StuardBot(commands.Bot):
@@ -65,6 +66,7 @@ class StuardBot(commands.Bot):
         self.sso_override: bool | None = None
         self.microsoft_override: bool | None = None
         self.email_override: bool | None = None
+        self.manual_override: bool | None = None
         self.web: WebServer | None = None
         self.verify_limiter = RateLimiter(3, 15 * 60)
         self.web_limiter = RateLimiter(30, 60)
@@ -90,6 +92,7 @@ class StuardBot(commands.Bot):
         self.sso_override = await self._load_override(SSO_OVERRIDE_KEY)
         self.microsoft_override = await self._load_override(MICROSOFT_OVERRIDE_KEY)
         self.email_override = await self._load_override(EMAIL_OVERRIDE_KEY)
+        self.manual_override = await self._load_override(MANUAL_OVERRIDE_KEY)
 
         self.saml = load_saml(self.settings, self.cfg)
         self.microsoft = load_microsoft(self.settings, self.cfg)
@@ -206,6 +209,10 @@ class StuardBot(commands.Bot):
     async def set_email_override(self, value: bool | None) -> None:
         await self._store_override(EMAIL_OVERRIDE_KEY, value)
         self.email_override = value
+
+    async def set_manual_override(self, value: bool | None) -> None:
+        await self._store_override(MANUAL_OVERRIDE_KEY, value)
+        self.manual_override = value
 
     async def reload_config(self) -> None:
         cfg = load_config(self.settings.config_path)

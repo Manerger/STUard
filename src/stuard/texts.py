@@ -222,7 +222,7 @@ SETUP_CHANNEL_MISSING = "⚠️ Kanál `channels.{name}` nie je nastavený alebo
 SETUP_CHANNEL_OK = "✅ Kanál `channels.{name}`: {channel}"
 SETUP_SSO_STATE = "STU (idp.stuba.sk): **{state}** (config: {config}, prepínač: {override}, SAML súbory: {files})"
 SETUP_MICROSOFT_STATE = "Microsoft 365: **{state}** (config: {config}, prepínač: {override}, aplikácia: {app})"
-SETUP_MANUAL_STATE = "Manuálne overenie (snímka): **{state}**"
+SETUP_MANUAL_STATE = "Manuálne overenie (snímka): **{state}** (režim: {mode}, prepínač: {override})"
 SETUP_EMAIL_STATE = "E-mailový kód: **{state}** (config: {config}, prepínač: {override}, LDAP: {ldap})"
 SETUP_SYNCED = "Slash príkazy synchronizované: {n}."
 SETUP_RELOADED = "Konfigurácia znovu načítaná ✅"
@@ -239,6 +239,10 @@ ADMIN_MICROSOFT_NO_APP = (
     "kým ich nedoplníš a nereštartuješ bota."
 )
 ADMIN_EMAIL_SET = "Prepínač overenia e-mailom: **{state}**. Aktuálne je overenie e-mailom **{effective}**."
+ADMIN_MANUAL_SET = (
+    "Prepínač manuálneho overenia: **{state}**. Aktuálne je manuálne overenie **{effective}**.\n"
+    "Keď je vypnuté, každý sa musí prihlásiť (Microsoft/STU/e-mail); manuálne zapni len keď treba overiť vyučujúceho."
+)
 ADMIN_REVERIFY_STATUS = (
     "Opätovné overenie: **{enabled}** · najbližší termín: **{deadline}** · "
     "členov s termínom: {count} · po termíne: {overdue}"
