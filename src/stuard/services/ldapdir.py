@@ -8,10 +8,17 @@ lazily so the rest of the bot (and the tests, which inject a fake lookup) do not
 from __future__ import annotations
 
 import logging
+import ssl
 
 from stuard.config import LdapCfg
 
 log = logging.getLogger(__name__)
+
+# STU's LDAPS server presents a legacy-signed certificate chain (STU Bratislava Root CA v2) that OpenSSL 3's
+# default security level 2 rejects with a handshake failure, even though it negotiates TLS 1.2 + AES256-GCM.
+# The bind is anonymous and runs over the STU VPN tunnel, and the cert is not verified (CERT_NONE), so we lower
+# the security level to 1 to allow the connection. This only affects the LDAP enrichment lookup.
+_LDAP_CIPHERS = "DEFAULT@SECLEVEL=1"
 
 # Attributes we read; faculty is inferred from host/accountStatus (see domain/ldap_map).
 ATTRIBUTES = ("uid", "uisId", "cn", "sn", "givenName", "mail", "employeeType", "host", "accountStatus")
@@ -29,8 +36,11 @@ class LdapDirectory:
             log.warning("ldap3 is not installed; LDAP enrichment unavailable")
             return None
         safe = login.replace("\\", "\\5c").replace("*", "\\2a").replace("(", "\\28").replace(")", "\\29")
+        tls = ldap3.Tls(validate=ssl.CERT_NONE, ciphers=_LDAP_CIPHERS)
         try:
-            server = ldap3.Server(self.cfg.url, connect_timeout=self.cfg.timeout_seconds, get_info=None)
+            server = ldap3.Server(
+                self.cfg.url, connect_timeout=self.cfg.timeout_seconds, get_info=None, use_ssl=True, tls=tls
+            )
             conn = ldap3.Connection(server, auto_bind=True, receive_timeout=self.cfg.timeout_seconds)
             try:
                 conn.search(
