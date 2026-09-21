@@ -106,7 +106,8 @@ EMAIL_NOT_FOUND = "Tento login sa v systéme STU nenašiel. Skontroluj ho, alebo
 EMAIL_REJECTED = "Podľa STU nie si študentom MTF. Ak ide o omyl, použi /verify-manual alebo kontaktuj moderátorov."
 EMAIL_SENT = (
     "Kód som poslal na **{email}** ✅ (platí {minutes} min).\n"
-    "Otvor školský e-mail a zadaj kód príkazom **/verify-code**."
+    "Školský e-mail si otvoríš na <https://webmail.stuba.sk> (nie v AIS/UIS).\n"
+    "Kód potom zadaj príkazom **/verify-code**."
 )
 EMAIL_SEND_FAILED = "E-mail sa nepodarilo odoslať. Skús to o chvíľu znova alebo použi /verify-manual."
 EMAIL_NO_PENDING = "Najprv si vyžiadaj kód príkazom /verify-email."
