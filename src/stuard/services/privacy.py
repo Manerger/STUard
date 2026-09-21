@@ -61,7 +61,7 @@ class PrivacyService:
         identity = await bot.repo.get_identity_by_user(user_id)
         days = bot.cfg.retention.tombstone_days
         if identity is not None and days > 0:
-            await bot.repo.add_tombstone(identity.subject_hmac, now_ts() + days * DAY)
+            await bot.repo.add_tombstone(identity.subject_hmac, now_ts() + days * DAY, user_id)
         await bot.reviews.cancel_for_user(user_id)
         await bot.repo.delete_member(user_id)
         await bot.roles.sync_user(user_id, reason="STUard: /forget-me")

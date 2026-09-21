@@ -11,7 +11,7 @@ from stuard.security.tokens import hash_token
 
 
 async def test_migrate_is_idempotent(repo: Repo) -> None:
-    assert await migrate(repo.conn) == 2  # already at the latest migration; re-running is a no-op
+    assert await migrate(repo.conn) == 3  # already at the latest migration; re-running is a no-op
 
 
 async def test_bind_identity_conflict_and_rebind(repo: Repo) -> None:
@@ -35,6 +35,15 @@ async def test_tombstone_blocks_binding_until_expiry(repo: Repo) -> None:
     await repo.add_tombstone(subject, expires_at=200)
     assert await repo.bind_identity(subject, 5, [], 100) == "tombstoned"
     assert await repo.bind_identity(subject, 5, [], 300) == "ok"
+
+
+async def test_readmit_clears_tombstone_for_user(repo: Repo) -> None:
+    subject = b"r" * 32
+    await repo.add_tombstone(subject, expires_at=500, user_id=42)
+    assert await repo.bind_identity(subject, 42, [], 100) == "tombstoned"
+    assert await repo.clear_tombstones_for_user(99) == 0  # different user: nothing cleared
+    assert await repo.clear_tombstones_for_user(42) == 1
+    assert await repo.bind_identity(subject, 42, [], 100) == "ok"
 
 
 async def test_link_token_is_single_use_under_concurrency(repo: Repo) -> None:

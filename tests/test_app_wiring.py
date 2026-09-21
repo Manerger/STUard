@@ -63,6 +63,7 @@ async def test_slash_commands_register(cfg: AppConfig) -> None:
             "teacher",
             "info",
             "unlink",
+            "readmit",
             "reverify",
             "requests",
             "lookup",

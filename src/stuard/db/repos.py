@@ -274,12 +274,16 @@ class Repo:
     async def unbind_user(self, user_id: int) -> bool:
         return await self._write("DELETE FROM identities WHERE user_id = ?", (user_id,)) > 0
 
-    async def add_tombstone(self, subject: bytes, expires_at: int) -> None:
+    async def add_tombstone(self, subject: bytes, expires_at: int, user_id: int | None = None) -> None:
         await self._write(
-            "INSERT INTO tombstones(subject_hmac, expires_at) VALUES (?, ?) "
-            "ON CONFLICT(subject_hmac) DO UPDATE SET expires_at = excluded.expires_at",
-            (subject, expires_at),
+            "INSERT INTO tombstones(subject_hmac, expires_at, user_id) VALUES (?, ?, ?) "
+            "ON CONFLICT(subject_hmac) DO UPDATE SET expires_at = excluded.expires_at, user_id = excluded.user_id",
+            (subject, expires_at, user_id),
         )
+
+    async def clear_tombstones_for_user(self, user_id: int) -> int:
+        """Drop tombstones created by this Discord user (their own /forget-me), so they can re-verify."""
+        return await self._write("DELETE FROM tombstones WHERE user_id = ?", (user_id,))
 
     async def purge_tombstones(self, now: int) -> int:
         return await self._write("DELETE FROM tombstones WHERE expires_at <= ?", (now,))

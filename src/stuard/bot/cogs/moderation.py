@@ -99,6 +99,21 @@ class ModerationCog(commands.GroupCog, group_name="mod", group_description="Mode
         else:
             await interaction.response.send_message(T.MOD_NOT_LINKED.format(member=member.mention), ephemeral=True)
 
+    @app_commands.command(
+        name="readmit", description="Zrušiť dočasnú blokáciu (po /forget-me), aby sa člen mohol znova overiť"
+    )
+    @app_commands.describe(member="Člen")
+    @moderator_only()
+    async def readmit(self, interaction: discord.Interaction, member: discord.Member) -> None:
+        cleared = await self.bot.repo.clear_tombstones_for_user(member.id)
+        if cleared:
+            await self.bot.audit.log(
+                "tombstone_cleared", actor_id=interaction.user.id, target_id=member.id, detail={"count": cleared}
+            )
+            await interaction.response.send_message(T.MOD_READMIT_DONE.format(member=member.mention), ephemeral=True)
+        else:
+            await interaction.response.send_message(T.MOD_READMIT_NONE.format(member=member.mention), ephemeral=True)
+
     @app_commands.command(name="reverify", description="Vyžiadať od člena obnovenie overenia")
     @app_commands.describe(member="Člen", days="Počet dní na obnovenie")
     @moderator_only()

@@ -110,7 +110,7 @@ retention:
   flows_hours: 24
   left_member_days: 30
   audit_days: 180
-  tombstone_days: 30                # 0 disables the anti account-hopping block after /forget-me
+  tombstone_days: 1                 # anti account-hopping block after /forget-me; 0 disables, /mod readmit clears it
 
 study:
   allowed_statuses: [student]
