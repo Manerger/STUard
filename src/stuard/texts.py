@@ -328,16 +328,23 @@ PRIVACY_TITLE = "Ochrana osobných údajov"
 
 def privacy_notice(cfg: AppConfig) -> list[str]:
     r = cfg.retention
+    e = cfg.email
     contact = cfg.privacy_contact.strip() or "moderátori Discord servera"
     paragraphs = [
         "STUard je bot Discord servera študentov MTF STU. Overuje, že člen má konto STU, a prideľuje roly.",
-        "Overenie prebieha prihlásením školským kontom Microsoft 365 alebo na idp.stuba.sk. Heslo zadávaš "
-        "výhradne na stránke STU; bot ho nikdy nevidí ani neukladá. Z Microsoft 365 bot načíta prihlasovacie "
-        "meno, číslo AIS ID a typ konta (napr. študent), z idp.stuba.sk identifikátor konta a typ príslušnosti.",
+        "Overenie prebieha prihlásením školským kontom Microsoft 365 alebo na idp.stuba.sk, alebo jednorazovým "
+        "kódom zaslaným na školský e-mail (@stuba.sk). Pri prihlásení heslo zadávaš výhradne na stránke STU; bot "
+        "ho nikdy nevidí ani neukladá. Z Microsoft 365 bot načíta prihlasovacie meno, číslo AIS ID a typ konta "
+        "(napr. študent), z idp.stuba.sk identifikátor konta a typ príslušnosti.",
         "Ukladáme: Discord ID, stav overenia a jeho dátumy, jednosmerný kryptografický odtlačok (HMAC) čísla "
         "AIS ID alebo identifikátora konta – aby jedno konto nebolo možné použiť pre viac Discord účtov –, typ "
         "konta alebo príslušnosti a zvolený stupeň, program a ročník. Prihlasovacie meno, AIS ID, meno ani "
-        "e-mail neukladáme v čitateľnej podobe.",
+        "e-mail si neuchovávame natrvalo v čitateľnej podobe.",
+        f"Pri overení e-mailovým kódom posielame kód na tvoj školský e-mail cez službu Resend "
+        f"(poskytovateľ odosielania e-mailov / spracovateľ so sídlom v USA), ktorá môže záznam o odoslanom "
+        f"e-maile (adresu a obsah správy) uchovávať vo svojich logoch až 30 dní. Počas overovania (kým kód "
+        f"nezadáš alebo nevyprší, najviac {e.code_ttl_minutes} min) dočasne uložíme tvoj školský login, e-mail "
+        "a odtlačok kódu; po overení alebo vypršaní sa tieto údaje zmažú.",
         f"Pri manuálnom overení je snímka obrazovky viditeľná iba moderátorom a po rozhodnutí sa vymaže "
         f"(najneskôr po {cfg.manual.expire_days} dňoch). Ak rolu po prihlásení cez Microsoft 365 potvrdzuje "
         "moderátor, vidí v žiadosti aj tvoj školský login a typ konta; aj táto správa sa po rozhodnutí vymaže.",
@@ -345,7 +352,8 @@ def privacy_notice(cfg: AppConfig) -> list[str]:
         "(overenie je dobrovoľné). Záznamy moderácie a dočasná blokácia konta po vymazaní údajov: "
         "oprávnený záujem na ochrane pred zneužitím.",
         f"Uchovávanie: počas členstva na serveri; {r.left_member_days} dní po odchode zo servera; záznamy "
-        f"moderácie {r.audit_days} dní; nedokončené overenia {r.flows_hours} hodín.",
+        f"moderácie {r.audit_days} dní; nedokončené overenia {r.flows_hours} hodín; overovacie e-mailové kódy "
+        f"do vypršania (max {e.code_ttl_minutes} min); záznamy o odoslaných e-mailoch u služby Resend do 30 dní.",
         "Tvoje práva: kópia údajov (/privacy), vymazanie (/forget-me), odvolanie súhlasu kedykoľvek, sťažnosť "
         "na Úrad na ochranu osobných údajov SR.",
         f"Kontakt: {contact}.",
