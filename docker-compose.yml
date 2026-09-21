@@ -56,5 +56,41 @@ services:
 # To run without Cloudflare, delete the cloudflared service, restore the caddy
 # service from Caddyfile, and publish 80/443 instead.
 
+  # Optional: OpenVPN tunnel to STU (vpn.cvt.stuba.sk) that forwards ldap.stuba.sk:636 to the bot, so LDAP
+  # enrichment (email.ldap.enabled) works WITHOUT routing the bot's Discord/e-mail traffic through the
+  # university network — only LDAP goes through the tunnel. On the "ldap" profile, so a normal
+  # `docker-compose up -d` never starts it; enable with:  docker-compose --profile ldap up -d stuvpn
+  # Needs secrets/stu-vpn.ovpn (never commit it) and STU_VPN_USER / STU_VPN_PASS in .env.
+  stuvpn:
+    image: alpine:3.20
+    profiles: ["ldap"]
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      STU_VPN_USER: ${STU_VPN_USER:-}
+      STU_VPN_PASS: ${STU_VPN_PASS:-}
+      STU_LDAP_IP: ${STU_LDAP_IP:-147.175.1.11}
+    volumes:
+      - ./secrets/stu-vpn.ovpn:/etc/openvpn/stu.ovpn:ro
+    networks:
+      default:
+        # The bot resolves ldap.stuba.sk to this sidecar; socat forwards it to STU over the tunnel.
+        aliases:
+          - ldap.stuba.sk
+    command:
+      - /bin/sh
+      - -c
+      - |
+        set -e
+        [ -n "$$STU_VPN_USER" ] && [ -n "$$STU_VPN_PASS" ] || { echo "stuvpn: set STU_VPN_USER and STU_VPN_PASS in .env"; exit 1; }
+        apk add --no-cache openvpn socat >/dev/null
+        umask 077
+        printf '%s\n%s\n' "$$STU_VPN_USER" "$$STU_VPN_PASS" > /tmp/stu.auth
+        socat TCP-LISTEN:636,fork,reuseaddr "TCP:$$STU_LDAP_IP:636" &
+        exec openvpn --config /etc/openvpn/stu.ovpn
+
 volumes:
   stuard_data:
