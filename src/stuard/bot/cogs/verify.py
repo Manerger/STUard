@@ -51,6 +51,30 @@ class VerifyCog(commands.Cog):
         message = await self.bot.reviews.submit_manual(interaction.user, rola.value, screenshot, poznamka)
         await interaction.followup.send(message, ephemeral=True)
 
+    @app_commands.command(name="verify-email", description="Overenie kódom na školský e-mail (@stuba.sk)")
+    @app_commands.guild_only()
+    @app_commands.describe(login="Tvoj školský login (napr. xnovak) alebo číslo AIS ID")
+    async def verify_email(self, interaction: discord.Interaction, login: app_commands.Range[str, 2, 64]) -> None:
+        if not isinstance(interaction.user, discord.Member):
+            await interaction.response.send_message(T.NOT_IN_GUILD, ephemeral=True)
+            return
+        if not self.bot.email.enabled():
+            await interaction.response.send_message(T.EMAIL_DISABLED, ephemeral=True)
+            return
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        message = await self.bot.email.request_code(interaction.user, login)
+        await interaction.followup.send(message, ephemeral=True)
+
+    @app_commands.command(name="verify-code", description="Zadať overovací kód z e-mailu")
+    @app_commands.guild_only()
+    @app_commands.describe(code="Kód z e-mailu")
+    async def verify_code(self, interaction: discord.Interaction, code: app_commands.Range[str, 4, 16]) -> None:
+        if not isinstance(interaction.user, discord.Member):
+            await interaction.response.send_message(T.NOT_IN_GUILD, ephemeral=True)
+            return
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        message = await self.bot.email.submit_code(interaction.user, code)
+        await interaction.followup.send(message, ephemeral=True)
 
 async def setup(bot: StuardBot) -> None:
     await bot.add_cog(VerifyCog(bot))

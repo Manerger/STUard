@@ -75,6 +75,27 @@ manual:
   reject_cooldown_hours: 24
   expire_days: 7
 
+email:
+  # Verify students with a one-time code sent to <login>@stuba.sk (/verify-email → /verify-code). The code
+  # proves the person controls a real STU mailbox — no password involved. Needs SMTP_* in .env.
+  # Toggle at runtime with /admin email on|off. Applicants (no mailbox) still use manual review.
+  enabled: false
+  allowed_domains: [stuba.sk]
+  code_ttl_minutes: 15
+  max_attempts: 5
+  # Optional LDAP enrichment: look the login up in STU's directory for faculty + student/staff type and the
+  # AIS ID (so the identity matches the Microsoft/SAML fingerprint). Needs the bot behind the STU VPN.
+  ldap:
+    enabled: false
+    url: "ldaps://ldap.stuba.sk:636"
+    base_dn: "ou=People,dc=stuba,dc=sk"
+    login_attribute: uid
+    timeout_seconds: 10
+  allowed_faculties: [MTF]          # with LDAP: only these faculties auto-verify ([] = any)
+  student_types: [student]          # LDAP employeeType → Študent
+  teacher_types: [employee, staff, faculty, researcher]   # → moderator review (never automatic)
+  unmatched: manual_review          # LDAP present, type not recognized: manual_review | student
+  without_ldap: student             # no LDAP enrichment: a verified mailbox becomes student | manual_review
 reverify:
   enabled: true
   applies_to: [student, applicant]

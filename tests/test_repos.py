@@ -11,7 +11,7 @@ from stuard.security.tokens import hash_token
 
 
 async def test_migrate_is_idempotent(repo: Repo) -> None:
-    assert await migrate(repo.conn) == 1
+    assert await migrate(repo.conn) == 2  # already at the latest migration; re-running is a no-op
 
 
 async def test_bind_identity_conflict_and_rebind(repo: Repo) -> None:

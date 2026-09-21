@@ -37,6 +37,16 @@ Change the lists in `config.yaml` → `microsoft`. The raw `employeeType` is wri
 
 If Microsoft shows **"Need admin approval"**, STU requires an administrator to review third-party apps before students can sign in to them. Switch the Microsoft login off (`/admin microsoft off`) and keep using manual review, which needs no approval. Allowing the app is STU IT's decision; if you ask them, explain what the bot does and the one permission it requests (`User.Read`).
 
+### Email-code verification (optional, `/verify-email` → `/verify-code`)
+
+Verifies **students** with a one-time code sent to `<login>@stuba.sk`. The member runs `/verify-email login:<xlogin>` (or their AIS ID), the bot emails a code, and `/verify-code code:<CODE>` proves they control a real STU mailbox → **Študent**. No password is involved, and it needs no STU IT approval. Applicants (no mailbox) still use manual review. Toggle at runtime with **`/admin email on|off`**.
+
+**Prerequisite — SMTP.** Set `SMTP_*` in `.env` (a Gmail account with an *App Password* works: `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=587`, `SMTP_STARTTLS=true`, `SMTP_USER`/`SMTP_FROM` = the address, `SMTP_PASSWORD` = the app password). Without SMTP configured, `/verify-email` reports it's not set up.
+
+**Optional LDAP enrichment** (`email.ldap.enabled`). Looks the login up in STU's directory to add **faculty** (so only MTF students auto-verify), **student/staff type** (staff → a Vyučujúci moderator review, never automatic), and the **AIS ID** (so the identity fingerprint matches the Microsoft/SAML one — needed for cross-method duplicate detection). Anonymous LDAPS bind, so **the bot must run inside STU's network** — a VPN sidecar on the Pi (the STU OpenVPN profile), like the FEI bot. Without LDAP, a verified mailbox simply becomes Študent (`email.without_ldap`), with faculty/type unknown.
+
+Identity binding stores an HMAC of `<AIS ID>@stuba.sk` (with LDAP) or `<login>@stuba.sk` (without), so one account can't verify two Discords. Pending codes are hashed, expire after `code_ttl_minutes`, and are deleted on use.
+
 ### Manual review (applicants)
 
 - Members run `/verify-manual` and upload a screenshot of their UIS portal, or applicants a screenshot of their e-prihláška.

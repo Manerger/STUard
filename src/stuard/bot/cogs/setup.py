@@ -95,6 +95,14 @@ class SetupCog(commands.GroupCog, group_name="setup", group_description="Nastave
                 app="OK" if bot.microsoft else "chýba",
             )
         )
+        lines.append(
+            T.SETUP_EMAIL_STATE.format(
+                state=_on_off(bot.email.enabled()),
+                config=_on_off(bot.cfg.email.enabled),
+                override=_state(bot.email_override),
+                ldap=_on_off(bot.cfg.email.ldap.enabled),
+            )
+        )
         lines.append(T.SETUP_MANUAL_STATE.format(state=_on_off(verification.manual_available())))
         lines.append(f"SP metadáta: {bot.settings.public_base_url}/saml/metadata")
         embed = discord.Embed(title=T.SETUP_CHECK_TITLE, description="\n".join(lines)[:4000])
@@ -197,6 +205,16 @@ class AdminCog(commands.GroupCog, group_name="admin", group_description="Správa
         )
         if value and self.bot.microsoft is None:
             text += T.ADMIN_MICROSOFT_NO_APP
+        await interaction.response.send_message(text, ephemeral=True)
+
+    @app_commands.command(name="email", description="Zapnúť alebo vypnúť overenie e-mailovým kódom bez úpravy configu")
+    @app_commands.describe(state="Nový stav")
+    @app_commands.choices(state=OVERRIDE_CHOICES)
+    @admin_only()
+    async def email(self, interaction: discord.Interaction, state: app_commands.Choice[str]) -> None:
+        await self.bot.set_email_override(OVERRIDE_VALUES[state.value])
+        await self.bot.audit.log("email_override", actor_id=interaction.user.id, detail={"state": state.value})
+        text = T.ADMIN_EMAIL_SET.format(state=state.name, effective=_on_off(self.bot.email.enabled()))
         await interaction.response.send_message(text, ephemeral=True)
 
     @app_commands.command(name="reverify-status", description="Prehľad ročného obnovenia overenia")

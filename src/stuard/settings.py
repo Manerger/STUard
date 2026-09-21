@@ -31,6 +31,15 @@ class Settings(BaseSettings):
 
     subject_hmac_key: SecretStr
 
+    # SMTP for email-code verification (email.enabled). e.g. Gmail: smtp.gmail.com:587, an app password.
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: SecretStr = SecretStr("")
+    smtp_from: str = ""
+    smtp_starttls: bool = True
+    smtp_ssl: bool = False  # implicit TLS (port 465); when true, starttls is not used
+
     saml_sp_key_file: Path = Path("secrets/sp.key")
     saml_sp_cert_file: Path = Path("secrets/sp.crt")
     saml_idp_metadata_file: Path = Path("saml/idp_metadata.xml")

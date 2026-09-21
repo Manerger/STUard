@@ -21,7 +21,11 @@ METHOD_LABELS: dict[str, str] = {
     "manual": "manuálne overenie moderátorom",
     "mod": "nastavené moderátorom",
 }
-VIA_LABELS: dict[str, str] = {"saml": "idp.stuba.sk", "microsoft": "Microsoft 365 (STU)"}
+VIA_LABELS: dict[str, str] = {
+    "saml": "idp.stuba.sk",
+    "microsoft": "Microsoft 365 (STU)",
+    "email": "e-mailový kód (@stuba.sk)",
+}
 
 # ------------------------------------------------------------------ general
 NOT_IN_GUILD = "Tento príkaz funguje iba na serveri."
@@ -81,6 +85,33 @@ MANUAL_SUBMITTED = (
     "Žiadosť odoslaná ✅ Moderátor ju skontroluje a výsledok ti pošlem do súkromnej správy.\n"
     "Snímka je viditeľná iba moderátorom a po rozhodnutí sa vymaže."
 )
+
+# ------------------------------------------------------------------ email-code verification
+EMAIL_SUBJECT = "STUard – overovací kód"
+EMAIL_BODY = (
+    "Ahoj,\n\ntvoj overovací kód pre Discord server MTF STU je:\n\n    {code}\n\n"
+    "Zadaj ho na Discorde príkazom /verify-code. Platí {minutes} minút.\n"
+    "Ak si o kód nežiadal(a), túto správu ignoruj."
+)
+EMAIL_DISABLED = "Overenie e-mailom nie je zapnuté. Použi /verify alebo /verify-manual."
+EMAIL_NOT_CONFIGURED = "Odosielanie e-mailov nie je nastavené. Kontaktuj adminov servera."
+EMAIL_BAD_LOGIN = "Zadaj svoj školský login (napr. `xnovak`) alebo číslo AIS ID."
+EMAIL_NOT_FOUND = "Tento login sa v systéme STU nenašiel. Skontroluj ho, alebo použi /verify-manual."
+EMAIL_REJECTED = "Podľa STU nie si študentom MTF. Ak ide o omyl, použi /verify-manual alebo kontaktuj moderátorov."
+EMAIL_SENT = (
+    "Kód som poslal na **{email}** ✅ (platí {minutes} min).\n"
+    "Otvor školský e-mail a zadaj kód príkazom **/verify-code**."
+)
+EMAIL_SEND_FAILED = "E-mail sa nepodarilo odoslať. Skús to o chvíľu znova alebo použi /verify-manual."
+EMAIL_NO_PENDING = "Najprv si vyžiadaj kód príkazom /verify-email."
+EMAIL_EXPIRED = "Kód vypršal. Vyžiadaj si nový príkazom /verify-email."
+EMAIL_WRONG_CODE = "Nesprávny kód. Zostáva pokusov: {left}."
+EMAIL_TOO_MANY = "Priveľa pokusov. Vyžiadaj si nový kód príkazom /verify-email."
+EMAIL_CONFLICT = "Toto školské konto je už prepojené s iným Discord účtom. Ak ide o omyl, kontaktuj moderátorov."
+EMAIL_TOMBSTONED = "Toto školské konto bolo nedávno odpojené. Skús to neskôr alebo kontaktuj moderátorov."
+EMAIL_VERIFIED = "Overené ✅ Máš rolu **Študent**. Program a ročník si nastav cez /profile."
+EMAIL_TEACHER_PENDING = "Overené ✅ Žiadosť o rolu **Vyučujúci** dostali moderátori, výsledok ti pošlem správou."
+EMAIL_REVIEW_PENDING = "E-mail overený ✅ Rolu ešte potvrdí moderátor, výsledok ti pošlem správou."
 
 # ------------------------------------------------------------------ reviews (moderators)
 REVIEW_TITLES = {
@@ -186,6 +217,7 @@ SETUP_CHANNEL_OK = "✅ Kanál `channels.{name}`: {channel}"
 SETUP_SSO_STATE = "STU (idp.stuba.sk): **{state}** (config: {config}, prepínač: {override}, SAML súbory: {files})"
 SETUP_MICROSOFT_STATE = "Microsoft 365: **{state}** (config: {config}, prepínač: {override}, aplikácia: {app})"
 SETUP_MANUAL_STATE = "Manuálne overenie (snímka): **{state}**"
+SETUP_EMAIL_STATE = "E-mailový kód: **{state}** (config: {config}, prepínač: {override}, LDAP: {ldap})"
 SETUP_SYNCED = "Slash príkazy synchronizované: {n}."
 SETUP_RELOADED = "Konfigurácia znovu načítaná ✅"
 SETUP_RELOAD_FAILED = "Konfigurácia je neplatná, ponechávam pôvodnú:\n```\n{error}\n```"
@@ -200,6 +232,7 @@ ADMIN_MICROSOFT_NO_APP = (
     "\n⚠️ V .env chýba MICROSOFT_CLIENT_ID alebo MICROSOFT_CLIENT_SECRET – prihlásenie cez Microsoft sa nezapne, "
     "kým ich nedoplníš a nereštartuješ bota."
 )
+ADMIN_EMAIL_SET = "Prepínač overenia e-mailom: **{state}**. Aktuálne je overenie e-mailom **{effective}**."
 ADMIN_REVERIFY_STATUS = (
     "Opätovné overenie: **{enabled}** · najbližší termín: **{deadline}** · "
     "členov s termínom: {count} · po termíne: {overdue}"
