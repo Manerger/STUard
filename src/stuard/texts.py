@@ -7,6 +7,16 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from stuard.config import AppConfig
 
+
+def days_sk(n: int) -> str:
+    """Slovak day count with correct plural: 1 deň, 2–4 dni, else dní."""
+    if n == 1:
+        return "1 deň"
+    if 2 <= n <= 4:
+        return f"{n} dni"
+    return f"{n} dní"
+
+
 LABELS: dict[str, str] = {
     "unverified": "neoverený",
     "applicant": "Uchádzač",
@@ -115,7 +125,10 @@ EMAIL_EXPIRED = "Kód vypršal. Vyžiadaj si nový príkazom /verify-email."
 EMAIL_WRONG_CODE = "Nesprávny kód. Zostáva pokusov: {left}."
 EMAIL_TOO_MANY = "Priveľa pokusov. Vyžiadaj si nový kód príkazom /verify-email."
 EMAIL_CONFLICT = "Toto školské konto je už prepojené s iným Discord účtom. Ak ide o omyl, kontaktuj moderátorov."
-EMAIL_TOMBSTONED = "Toto školské konto bolo nedávno odpojené. Skús to neskôr alebo kontaktuj moderátorov."
+EMAIL_TOMBSTONED = (
+    "Toto školské konto bolo nedávno odpojené (napr. cez /forget-me). Ako ochrana pred zneužitím sa "
+    "{duration} nedá znova prepojiť — skús to potom znova, alebo napíš moderátorom, ktorí ťa vedia hneď pustiť."
+)
 EMAIL_VERIFIED = "Overené ✅ Máš rolu **Študent**. Program a ročník si nastav cez /profile."
 EMAIL_TEACHER_PENDING = "Overené ✅ Žiadosť o rolu **Vyučujúci** dostali moderátori, výsledok ti pošlem správou."
 EMAIL_REVIEW_PENDING = "E-mail overený ✅ Rolu ešte potvrdí moderátor, výsledok ti pošlem správou."
@@ -255,7 +268,7 @@ ADMIN_REVERIFY_RAN = "Hotovo – pripomienky: {reminded}, vypršané: {expired}.
 # ------------------------------------------------------------------ privacy
 PRIVACY_EXPORT_NOTE = "V prílohe je kópia údajov, ktoré o tebe bot uchováva."
 FORGET_CONFIRM = "Naozaj chceš vymazať všetky svoje údaje? Stratíš overené roly a budeš sa musieť overiť znova.{extra}"
-FORGET_TOMBSTONE = "\nTvoje školské konto sa potom {days} dní nebude dať znova prepojiť (ochrana pred zneužitím)."
+FORGET_TOMBSTONE = "\nTvoje školské konto sa potom {duration} nebude dať znova prepojiť (ochrana pred zneužitím)."
 FORGET_BUTTON = "Áno, vymazať moje údaje"
 FORGET_DONE = "Tvoje údaje boli vymazané a overené roly odobraté."
 
@@ -306,7 +319,8 @@ WEB_MESSAGES: dict[str, tuple[str, str]] = {
     ),
     "tombstoned": (
         "Dočasne zablokované",
-        "Toto školské konto bolo nedávno odpojené. Skús to neskôr alebo kontaktuj moderátorov.",
+        "Toto školské konto bolo nedávno odpojené (napr. cez /forget-me). Blokácia je dočasná – "
+        "skús to neskôr, alebo napíš moderátorom, ktorí ťa vedia hneď znova pustiť.",
     ),
     "rejected": (
         "Overenie sa nepodarilo",

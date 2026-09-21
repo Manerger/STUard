@@ -159,7 +159,7 @@ class EmailVerifyService:
             await bot.audit.log("email_duplicate_account", target_id=member.id)
             return T.EMAIL_CONFLICT
         if bound == "tombstoned":
-            return T.EMAIL_TOMBSTONED
+            return T.EMAIL_TOMBSTONED.format(duration=T.days_sk(bot.cfg.retention.tombstone_days))
 
         if row.outcome == "student":
             await bot.repo.set_member_status(
