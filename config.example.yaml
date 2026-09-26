@@ -30,6 +30,12 @@ roles:
   teacher:        { name: "Vyučujúci", color: "#d62728", hoist: true }
   alumni:         { name: "Absolvent", color: "#2ca02c", hoist: true }
   former_student: { name: "Bývalý študent", color: "#7f7f7f" }
+  outsider:       { name: "Outsider", color: "#8c564b", hoist: true }   # verified STU student from another faculty (LDAP)
+
+# Identity role given to members with no verified status (e.g. after /forget-me). Pair it with an auto-role
+# bot (e.g. Carl-bot) that assigns the SAME role on join: verifying then removes it and /forget-me restores it.
+# Must be one of the status role keys (student/applicant/alumni/former_student/outsider) or null (default: none).
+newcomer_role: null   # e.g. applicant  → the "Uchádzač" role above
 
 microsoft:
   # Main login: "Prihlásiť sa cez Microsoft 365" with the STU school account (@stuba.sk).
@@ -75,6 +81,28 @@ manual:
   reject_cooldown_hours: 24
   expire_days: 7
 
+email:
+  # Verify students with a one-time code sent to <login>@stuba.sk (/verify-email → /verify-code). The code
+  # proves the person controls a real STU mailbox — no password involved. Needs SMTP_* in .env.
+  # Toggle at runtime with /admin email on|off. Applicants (no mailbox) still use manual review.
+  enabled: false
+  allowed_domains: [stuba.sk]
+  code_ttl_minutes: 15
+  max_attempts: 5
+  # Optional LDAP enrichment: look the login up in STU's directory for faculty + student/staff type and the
+  # AIS ID (so the identity matches the Microsoft/SAML fingerprint). Needs the bot behind the STU VPN.
+  ldap:
+    enabled: false
+    url: "ldaps://ldap.stuba.sk:636"
+    base_dn: "ou=People,dc=stuba,dc=sk"
+    login_attribute: uid
+    timeout_seconds: 10
+  allowed_faculties: [MTF]          # with LDAP: only these faculties become Študent ([] = any); STU students
+                                    # from other faculties get the Outsider role instead of being rejected
+  student_types: [student]          # LDAP employeeType → Študent
+  teacher_types: [employee, staff, faculty, researcher]   # → moderator review (never automatic)
+  unmatched: manual_review          # LDAP present, type not recognized: manual_review | student
+  without_ldap: student             # no LDAP enrichment: a verified mailbox becomes student | manual_review
 reverify:
   enabled: true
   applies_to: [student, applicant]
@@ -89,7 +117,7 @@ retention:
   flows_hours: 24
   left_member_days: 30
   audit_days: 180
-  tombstone_days: 30                # 0 disables the anti account-hopping block after /forget-me
+  tombstone_days: 1                 # anti account-hopping block after /forget-me; 0 disables, /mod readmit clears it
 
 study:
   allowed_statuses: [student]

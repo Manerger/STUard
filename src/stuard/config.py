@@ -12,15 +12,24 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-Status = Literal["unverified", "applicant", "student", "former_student", "alumni"]
-STATUSES: tuple[str, ...] = ("unverified", "applicant", "student", "former_student", "alumni")
-IDENTITY_ROLE_KEYS: tuple[str, ...] = ("verified", "student", "applicant", "teacher", "alumni", "former_student")
+Status = Literal["unverified", "applicant", "student", "outsider", "former_student", "alumni"]
+STATUSES: tuple[str, ...] = ("unverified", "applicant", "student", "outsider", "former_student", "alumni")
+IDENTITY_ROLE_KEYS: tuple[str, ...] = (
+    "verified",
+    "student",
+    "applicant",
+    "teacher",
+    "alumni",
+    "former_student",
+    "outsider",
+)
 # Status → identity role key ("unverified" has no role).
 STATUS_ROLE_KEYS: dict[str, str] = {
     "student": "student",
     "applicant": "applicant",
     "alumni": "alumni",
     "former_student": "former_student",
+    "outsider": "outsider",
 }
 DISCORD_SELECT_LIMIT = 25
 DISCORD_NAME_LIMIT = 100
@@ -164,6 +173,43 @@ class ManualCfg(_Model):
     expire_days: int = Field(default=7, ge=1)
 
 
+class LdapCfg(_Model):
+    """Optional enrichment: look a login up in STU's directory to get faculty and student/staff type.
+
+    Anonymous bind over LDAPS; reachable only inside STU's network (run the bot behind the STU VPN).
+    """
+
+    enabled: bool = False
+    url: str = "ldaps://ldap.stuba.sk:636"
+    base_dn: str = "ou=People,dc=stuba,dc=sk"
+    login_attribute: str = "uid"
+    timeout_seconds: int = Field(default=10, ge=1, le=60)
+
+
+class EmailCfg(_Model):
+    """Email-code verification: a one-time code sent to <login>@stuba.sk proves the person owns a real STU mailbox.
+
+    Needs SMTP settings in .env. LDAP enrichment (optional) adds faculty + student/staff type and the AIS ID
+    (so identity matches the Microsoft/SAML fingerprint); without it, a verified mailbox defaults to Študent.
+    """
+
+    enabled: bool = False
+    allowed_domains: list[str] = Field(default_factory=lambda: ["stuba.sk"], min_length=1)
+    code_ttl_minutes: int = Field(default=15, ge=1, le=120)
+    max_attempts: int = Field(default=5, ge=1, le=20)
+    ldap: LdapCfg = Field(default_factory=LdapCfg)
+    allowed_faculties: list[str] = Field(default_factory=lambda: ["MTF"])  # empty = any faculty
+    student_types: list[str] = Field(default_factory=lambda: ["student"])
+    teacher_types: list[str] = Field(default_factory=lambda: ["employee", "staff", "faculty", "researcher"])
+    unmatched: Literal["manual_review", "student"] = "manual_review"  # LDAP present, type not recognized
+    without_ldap: Literal["student", "manual_review"] = "student"  # no LDAP enrichment available
+
+    @field_validator("allowed_faculties")
+    @classmethod
+    def _upper(cls, values: list[str]) -> list[str]:
+        return [v.strip().upper() for v in values]
+
+
 class ReverifyCfg(_Model):
     enabled: bool = True
     applies_to: list[Status] = Field(default_factory=lambda: ["student", "applicant"])
@@ -294,9 +340,14 @@ class AppConfig(_Model):
     sso: SsoCfg = Field(default_factory=SsoCfg)
     microsoft: MicrosoftCfg = Field(default_factory=MicrosoftCfg)
     manual: ManualCfg = Field(default_factory=ManualCfg)
+    email: EmailCfg = Field(default_factory=EmailCfg)
     reverify: ReverifyCfg = Field(default_factory=ReverifyCfg)
     retention: RetentionCfg = Field(default_factory=RetentionCfg)
     study: StudyCfg
+    # Identity role key given to members with no verified status (e.g. after /forget-me). Pair it with an
+    # external auto-role bot (Carl-bot) that assigns the same role on join: verifying removes it, /forget-me
+    # restores it. null keeps the default (unverified members get no STUard role).
+    newcomer_role: str | None = None
 
     @field_validator("timezone")
     @classmethod
@@ -318,6 +369,9 @@ class AppConfig(_Model):
         clashes = duplicate_names([r.name for r in self.roles.values()] + self.study.role_name_list())
         if clashes:
             raise ValueError(f"role names must be unique (case-insensitive): {clashes[0]!r}")
+        if self.newcomer_role is not None and self.newcomer_role not in STATUS_ROLE_KEYS.values():
+            allowed = sorted(set(STATUS_ROLE_KEYS.values()))
+            raise ValueError(f"newcomer_role must be one of {allowed} or null")
         return self
 
     @property

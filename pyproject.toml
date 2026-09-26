@@ -20,6 +20,7 @@ dependencies = [
   "jinja2>=3.1",
   "tzdata>=2024.1",
   "PyJWT[crypto]>=2.9",
+  "ldap3>=2.9",
 ]
 
 [project.optional-dependencies]

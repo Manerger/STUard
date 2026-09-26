@@ -57,7 +57,7 @@ class PrivacyCog(commands.Cog):
     @app_commands.guild_only()
     async def forget_me(self, interaction: discord.Interaction) -> None:
         days = self.bot.cfg.retention.tombstone_days
-        extra = T.FORGET_TOMBSTONE.format(days=days) if days > 0 else ""
+        extra = T.FORGET_TOMBSTONE.format(duration=T.days_sk(days)) if days > 0 else ""
         await interaction.response.send_message(
             T.FORGET_CONFIRM.format(extra=extra), view=ForgetConfirmView(self.bot, interaction.user.id), ephemeral=True
         )

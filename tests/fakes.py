@@ -7,6 +7,7 @@ from typing import Any
 
 from stuard.config import AppConfig
 from stuard.db.repos import Repo
+from stuard.security.ratelimit import RateLimiter
 from stuard.services.members import MemberService
 from stuard.settings import Settings
 
@@ -77,6 +78,9 @@ class FakeBot:
         self.microsoft: object | None = object()
         self.sso_override: bool | None = None
         self.microsoft_override: bool | None = None
+        self.email_override: bool | None = None
+        self.manual_override: bool | None = None
+        self.verify_limiter = RateLimiter(5, 900)
         self.guild = None
         self.audit = FakeAudit()
         self.roles = FakeRoles()

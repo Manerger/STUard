@@ -48,7 +48,10 @@ async def test_slash_commands_register(cfg: AppConfig) -> None:
             if not extension.endswith(".events"):  # events starts background loops
                 await bot.load_extension(extension)
         commands = {command.name: command for command in bot.tree.get_commands()}
-        assert set(commands) == {"verify", "verify-manual", "profile", "privacy", "forget-me", "mod", "setup", "admin"}
+        assert set(commands) == {
+            "verify", "verify-manual", "verify-email", "verify-code",
+            "profile", "privacy", "forget-me", "mod", "setup", "admin",
+        }
         for command in commands.values():
             payload = command.to_dict(bot.tree)
             assert 1 <= len(payload["description"]) <= 100
@@ -60,6 +63,7 @@ async def test_slash_commands_register(cfg: AppConfig) -> None:
             "teacher",
             "info",
             "unlink",
+            "readmit",
             "reverify",
             "requests",
             "lookup",

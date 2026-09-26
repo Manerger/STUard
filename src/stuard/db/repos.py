@@ -75,6 +75,19 @@ class FlowRow:
 
 
 @dataclass(frozen=True, slots=True)
+class EmailCodeRow:
+    user_id: int
+    login: str
+    email: str
+    subject_hmac: bytes
+    code_hash: bytes
+    outcome: str
+    attempts: int
+    created_at: int
+    expires_at: int
+
+
+@dataclass(frozen=True, slots=True)
 class ReviewRow:
     id: int
     user_id: int
@@ -218,6 +231,7 @@ class Repo:
             await c.execute("DELETE FROM reminders WHERE user_id = ?", (user_id,))
             await c.execute("DELETE FROM review_requests WHERE user_id = ?", (user_id,))
             await c.execute("DELETE FROM verify_flows WHERE user_id = ?", (user_id,))
+            await c.execute("DELETE FROM email_codes WHERE user_id = ?", (user_id,))
             await c.execute("DELETE FROM members WHERE user_id = ?", (user_id,))  # cascades identity + study
 
     # ------------------------------------------------------------------ identities
@@ -260,12 +274,16 @@ class Repo:
     async def unbind_user(self, user_id: int) -> bool:
         return await self._write("DELETE FROM identities WHERE user_id = ?", (user_id,)) > 0
 
-    async def add_tombstone(self, subject: bytes, expires_at: int) -> None:
+    async def add_tombstone(self, subject: bytes, expires_at: int, user_id: int | None = None) -> None:
         await self._write(
-            "INSERT INTO tombstones(subject_hmac, expires_at) VALUES (?, ?) "
-            "ON CONFLICT(subject_hmac) DO UPDATE SET expires_at = excluded.expires_at",
-            (subject, expires_at),
+            "INSERT INTO tombstones(subject_hmac, expires_at, user_id) VALUES (?, ?, ?) "
+            "ON CONFLICT(subject_hmac) DO UPDATE SET expires_at = excluded.expires_at, user_id = excluded.user_id",
+            (subject, expires_at, user_id),
         )
+
+    async def clear_tombstones_for_user(self, user_id: int) -> int:
+        """Drop tombstones created by this Discord user (their own /forget-me), so they can re-verify."""
+        return await self._write("DELETE FROM tombstones WHERE user_id = ?", (user_id,))
 
     async def purge_tombstones(self, now: int) -> int:
         return await self._write("DELETE FROM tombstones WHERE expires_at <= ?", (now,))
@@ -466,6 +484,49 @@ class Repo:
 
     async def clear_study(self, user_id: int) -> None:
         await self._write("DELETE FROM study_selection WHERE user_id = ?", (user_id,))
+
+    # ------------------------------------------------------------------ email codes
+    async def upsert_email_code(
+        self,
+        user_id: int,
+        *,
+        login: str,
+        email: str,
+        subject_hmac: bytes,
+        code_hash: bytes,
+        outcome: str,
+        now: int,
+        ttl: int,
+    ) -> None:
+        """Store a pending code, replacing any earlier one for the same user (attempts reset)."""
+        await self._write(
+            """
+            INSERT INTO email_codes(user_id, login, email, subject_hmac, code_hash, outcome, attempts,
+                                    created_at, expires_at)
+            VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)
+            ON CONFLICT(user_id) DO UPDATE SET
+              login = excluded.login, email = excluded.email, subject_hmac = excluded.subject_hmac,
+              code_hash = excluded.code_hash, outcome = excluded.outcome, attempts = 0,
+              created_at = excluded.created_at, expires_at = excluded.expires_at
+            """,
+            (user_id, login, email, subject_hmac, code_hash, outcome, now, now + ttl),
+        )
+
+    async def get_email_code(self, user_id: int) -> EmailCodeRow | None:
+        row = await self._one("SELECT * FROM email_codes WHERE user_id = ?", (user_id,))
+        return EmailCodeRow(**dict(row)) if row else None
+
+    async def bump_email_attempts(self, user_id: int) -> int:
+        row = await self._write_returning(
+            "UPDATE email_codes SET attempts = attempts + 1 WHERE user_id = ? RETURNING attempts", (user_id,)
+        )
+        return int(row["attempts"]) if row else 0
+
+    async def delete_email_code(self, user_id: int) -> None:
+        await self._write("DELETE FROM email_codes WHERE user_id = ?", (user_id,))
+
+    async def purge_email_codes(self, created_before: int) -> int:
+        return await self._write("DELETE FROM email_codes WHERE created_at < ?", (created_before,))
 
     # ------------------------------------------------------------------ role map
     async def role_map(self) -> dict[str, int]:

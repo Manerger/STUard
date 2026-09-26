@@ -17,6 +17,7 @@ from stuard.db.migrate import migrate
 from stuard.db.repos import Repo
 from stuard.security.ratelimit import RateLimiter
 from stuard.services.audit import AuditService
+from stuard.services.email_verify import EmailVerifyService
 from stuard.services.members import MemberService
 from stuard.services.privacy import PrivacyService
 from stuard.services.reverify import ReverifyService
@@ -41,6 +42,8 @@ EXTENSIONS = (
 )
 SSO_OVERRIDE_KEY = "sso_enabled_override"
 MICROSOFT_OVERRIDE_KEY = "microsoft_enabled_override"
+EMAIL_OVERRIDE_KEY = "email_enabled_override"
+MANUAL_OVERRIDE_KEY = "manual_enabled_override"
 
 
 class StuardBot(commands.Bot):
@@ -62,6 +65,8 @@ class StuardBot(commands.Bot):
         self.oauth: DiscordOAuth | None = None
         self.sso_override: bool | None = None
         self.microsoft_override: bool | None = None
+        self.email_override: bool | None = None
+        self.manual_override: bool | None = None
         self.web: WebServer | None = None
         self.verify_limiter = RateLimiter(3, 15 * 60)
         self.web_limiter = RateLimiter(30, 60)
@@ -70,6 +75,7 @@ class StuardBot(commands.Bot):
         self.roles = RoleService(self)
         self.members = MemberService(self)
         self.reviews = ReviewService(self)
+        self.email = EmailVerifyService(self)
         self.verification = VerificationService(self)
         self.reverify = ReverifyService(self)
         self.privacy = PrivacyService(self)
@@ -85,6 +91,8 @@ class StuardBot(commands.Bot):
         self.repo = Repo(conn)
         self.sso_override = await self._load_override(SSO_OVERRIDE_KEY)
         self.microsoft_override = await self._load_override(MICROSOFT_OVERRIDE_KEY)
+        self.email_override = await self._load_override(EMAIL_OVERRIDE_KEY)
+        self.manual_override = await self._load_override(MANUAL_OVERRIDE_KEY)
 
         self.saml = load_saml(self.settings, self.cfg)
         self.microsoft = load_microsoft(self.settings, self.cfg)
@@ -110,12 +118,13 @@ class StuardBot(commands.Bot):
         await self.web.start()
         verification = self.verification
         log.info(
-            "login methods: STU (idp.stuba.sk) %s, Microsoft 365 %s, manual review %s",
+            "login methods: STU (idp.stuba.sk) %s, Microsoft 365 %s, email code %s, manual review %s",
             *(
                 "on" if on else "off"
                 for on in (
                     verification.sso_enabled(),
                     verification.microsoft_enabled(),
+                    self.email.enabled(),
                     verification.manual_available(),
                 )
             ),
@@ -196,6 +205,14 @@ class StuardBot(commands.Bot):
     async def set_microsoft_override(self, value: bool | None) -> None:
         await self._store_override(MICROSOFT_OVERRIDE_KEY, value)
         self.microsoft_override = value
+
+    async def set_email_override(self, value: bool | None) -> None:
+        await self._store_override(EMAIL_OVERRIDE_KEY, value)
+        self.email_override = value
+
+    async def set_manual_override(self, value: bool | None) -> None:
+        await self._store_override(MANUAL_OVERRIDE_KEY, value)
+        self.manual_override = value
 
     async def reload_config(self) -> None:
         cfg = load_config(self.settings.config_path)

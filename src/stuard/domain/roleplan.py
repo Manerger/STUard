@@ -78,6 +78,8 @@ def target_role_keys(status: str, is_teacher: bool, study: StudySel | None, cfg:
     keys: set[str] = set()
     if status in STATUS_ROLE_KEYS:
         keys.add(STATUS_ROLE_KEYS[status])
+    elif status == "unverified" and cfg.newcomer_role is not None:
+        keys.add(cfg.newcomer_role)  # baseline role for members who aren't verified (e.g. after /forget-me)
     if is_teacher:
         keys.add("teacher")
     if status != "unverified" or is_teacher:

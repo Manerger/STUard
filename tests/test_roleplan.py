@@ -39,6 +39,24 @@ def test_former_student_loses_study_roles_but_stays_verified(cfg: AppConfig) -> 
     assert keys == {"former_student", "verified"}
 
 
+def test_outsider_is_verified_without_study_roles(cfg: AppConfig) -> None:
+    # STU student from another faculty: verified access + the Outsider role, but no MTF study roles.
+    keys = target_role_keys("outsider", False, StudySel("bc", "bc-mech", 2), cfg)
+    assert keys == {"outsider", "verified"}
+
+
+def test_unverified_gets_no_role_by_default(cfg: AppConfig) -> None:
+    assert target_role_keys("unverified", False, None, cfg) == set()  # newcomer_role defaults to null
+
+
+def test_newcomer_role_is_assigned_when_unverified(cfg: AppConfig) -> None:
+    # With newcomer_role set (paired with an auto-role bot), an unverified member gets it — not "verified".
+    with_newcomer = cfg.model_copy(update={"newcomer_role": "applicant"})
+    assert target_role_keys("unverified", False, None, with_newcomer) == {"applicant"}
+    # ...and verifying as a student drops it (it is a managed role not in the student target).
+    assert target_role_keys("student", False, None, with_newcomer) == {"student", "verified"}
+
+
 def test_applicant_and_alumni_have_no_study_roles(cfg: AppConfig) -> None:
     study = StudySel("ing", "ing-mi", 1)
     assert target_role_keys("applicant", False, study, cfg) == {"applicant", "verified"}

@@ -43,6 +43,9 @@ class VerificationService:
         return bool(enabled and self.bot.microsoft is not None)
 
     def manual_available(self) -> bool:
+        override = self.bot.manual_override
+        if override is not None:
+            return override
         mode = self.bot.cfg.manual.mode
         automatic = self.sso_enabled() or self.microsoft_enabled()
         return mode == "always" or (mode == "when_sso_disabled" and not automatic)

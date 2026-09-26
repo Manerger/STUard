@@ -24,15 +24,27 @@ async def migrate(conn: aiosqlite.Connection) -> int:
     async with conn.execute("PRAGMA user_version") as cur:
         row = await cur.fetchone()
     version = int(row[0]) if row else 0
-    for number, name, sql in _migrations():
-        if number <= version:
-            continue
-        log.info("applying migration %s", name)
-        try:
-            await conn.executescript(f"BEGIN;\n{sql}\nPRAGMA user_version = {number};\nCOMMIT;")
-        except Exception:
-            if conn.in_transaction:
-                await conn.execute("ROLLBACK")
-            raise
-        version = number
+    pending = [entry for entry in _migrations() if entry[0] > version]
+    if not pending:
+        return version
+    # Rebuilding a table (the SQLite way to change a CHECK) must not cascade-delete children, and
+    # PRAGMA foreign_keys is a no-op inside a transaction, so disable enforcement around the whole run
+    # and verify integrity afterwards. Restored to ON in the finally, matching the app connection.
+    await conn.execute("PRAGMA foreign_keys=OFF")
+    try:
+        for number, name, sql in pending:
+            log.info("applying migration %s", name)
+            try:
+                await conn.executescript(f"BEGIN;\n{sql}\nPRAGMA user_version = {number};\nCOMMIT;")
+            except Exception:
+                if conn.in_transaction:
+                    await conn.execute("ROLLBACK")
+                raise
+            version = number
+        async with conn.execute("PRAGMA foreign_key_check") as cur:
+            violations = await cur.fetchall()
+        if violations:
+            raise RuntimeError(f"migration left foreign key violations: {violations}")
+    finally:
+        await conn.execute("PRAGMA foreign_keys=ON")
     return version

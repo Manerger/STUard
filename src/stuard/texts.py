@@ -7,10 +7,21 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from stuard.config import AppConfig
 
+
+def days_sk(n: int) -> str:
+    """Slovak day count with correct plural: 1 deň, 2–4 dni, else dní."""
+    if n == 1:
+        return "1 deň"
+    if 2 <= n <= 4:
+        return f"{n} dni"
+    return f"{n} dní"
+
+
 LABELS: dict[str, str] = {
     "unverified": "neoverený",
     "applicant": "Uchádzač",
     "student": "Študent",
+    "outsider": "Outsider",
     "former_student": "Bývalý študent",
     "alumni": "Absolvent",
     "teacher": "Vyučujúci",
@@ -21,7 +32,11 @@ METHOD_LABELS: dict[str, str] = {
     "manual": "manuálne overenie moderátorom",
     "mod": "nastavené moderátorom",
 }
-VIA_LABELS: dict[str, str] = {"saml": "idp.stuba.sk", "microsoft": "Microsoft 365 (STU)"}
+VIA_LABELS: dict[str, str] = {
+    "saml": "idp.stuba.sk",
+    "microsoft": "Microsoft 365 (STU)",
+    "email": "e-mailový kód (@stuba.sk)",
+}
 
 # ------------------------------------------------------------------ general
 NOT_IN_GUILD = "Tento príkaz funguje iba na serveri."
@@ -46,18 +61,24 @@ VERIFY_OPTION_MICROSOFT = (
     "• **Prihlásiť sa cez Microsoft 365** – školské konto @stuba.sk. Ak Microsoft napíše, že je potrebné "
     "schválenie správcu, STU to nepovoľuje – použi manuálne overenie."
 )
+VERIFY_OPTION_EMAIL = (
+    "• **E-mailom** – príkaz `/verify-email` pošle jednorazový kód na tvoj školský e-mail "
+    "(@stuba.sk), ktorý potvrdíš príkazom `/verify-code` (pre študentov)."
+)
 VERIFY_OPTION_MANUAL = "• **Manuálne** – príkaz `/verify-manual` so snímkou z UIS (napr. uchádzači)."
 VERIFY_LINK_FOOTER = "Odkazy platia {minutes} minút, fungujú iba raz a sú len pre teba. **Nikomu ich neposielaj.**"
+VERIFY_NO_LINK_LOGIN = "Automatické prihlásenie (STU / Microsoft) zatiaľ nie je zapnuté. Použi jednu z týchto možností:"
 VERIFY_LINK_BUTTON = "Prihlásiť sa cez STU"
 VERIFY_MICROSOFT_BUTTON = "Prihlásiť sa cez Microsoft 365"
 VERIFY_RATE_LIMITED = "Príliš veľa pokusov. Skús to znova o {minutes} min."
 VERIFY_DISABLED = "Overovanie je momentálne vypnuté. Kontaktuj moderátorov."
 VERIFY_PANEL_TITLE = "Overenie – MTF STU"
-VERIFY_PANEL_TEXT = (
-    "Pre prístup na server sa over školským kontom **Microsoft 365 (STU)** alebo snímkou z **UIS**.\n"
-    "Heslo zadávaš iba na stránke STU – bot ho nikdy nevidí ani neukladá.\n"
-    "Klikni na **Overiť sa** alebo použi príkaz **/verify**."
+VERIFY_PANEL_INTRO = "Pre prístup na server sa over. K dispozícii máš tieto možnosti:"
+VERIFY_PANEL_FOOTER = (
+    "Heslo zadávaš iba na stránke STU alebo Microsoftu – bot ho nikdy nevidí ani neukladá.\n"
+    "Klikni na tlačidlo nižšie alebo použi uvedený príkaz."
 )
+VERIFY_PANEL_NONE = "Overovanie je momentálne vypnuté. Kontaktuj moderátorov."
 VERIFY_PANEL_BUTTON = "Overiť sa"
 MANUAL_PANEL_BUTTON = "Manuálne overenie"
 
@@ -81,6 +102,40 @@ MANUAL_SUBMITTED = (
     "Žiadosť odoslaná ✅ Moderátor ju skontroluje a výsledok ti pošlem do súkromnej správy.\n"
     "Snímka je viditeľná iba moderátorom a po rozhodnutí sa vymaže."
 )
+
+# ------------------------------------------------------------------ email-code verification
+EMAIL_SUBJECT = "STUard – overovací kód"
+EMAIL_BODY = (
+    "Ahoj,\n\ntvoj overovací kód pre Discord server MTF STU je:\n\n    {code}\n\n"
+    "Zadaj ho na Discorde príkazom /verify-code. Platí {minutes} minút.\n"
+    "Ak si o kód nežiadal(a), túto správu ignoruj."
+)
+EMAIL_DISABLED = "Overenie e-mailom nie je zapnuté. Použi /verify alebo /verify-manual."
+EMAIL_NOT_CONFIGURED = "Odosielanie e-mailov nie je nastavené. Kontaktuj adminov servera."
+EMAIL_BAD_LOGIN = "Zadaj svoj školský login (napr. `xnovak`) alebo číslo AIS ID."
+EMAIL_NOT_FOUND = "Tento login sa v systéme STU nenašiel. Skontroluj ho, alebo použi /verify-manual."
+EMAIL_REJECTED = "Podľa STU nie si študentom MTF. Ak ide o omyl, použi /verify-manual alebo kontaktuj moderátorov."
+EMAIL_SENT = (
+    "Kód som poslal na **{email}** ✅ (platí {minutes} min).\n"
+    "Školský e-mail si otvoríš na <https://webmail.stuba.sk> (nie v AIS/UIS).\n"
+    "Kód potom zadaj príkazom **/verify-code**."
+)
+EMAIL_SEND_FAILED = "E-mail sa nepodarilo odoslať. Skús to o chvíľu znova alebo použi /verify-manual."
+EMAIL_NO_PENDING = "Najprv si vyžiadaj kód príkazom /verify-email."
+EMAIL_EXPIRED = "Kód vypršal. Vyžiadaj si nový príkazom /verify-email."
+EMAIL_WRONG_CODE = "Nesprávny kód. Zostáva pokusov: {left}."
+EMAIL_TOO_MANY = "Priveľa pokusov. Vyžiadaj si nový kód príkazom /verify-email."
+EMAIL_CONFLICT = "Toto školské konto je už prepojené s iným Discord účtom. Ak ide o omyl, kontaktuj moderátorov."
+EMAIL_TOMBSTONED = (
+    "Toto školské konto bolo nedávno odpojené (napr. cez /forget-me). Ako ochrana pred zneužitím sa "
+    "{duration} nedá znova prepojiť — skús to potom znova, alebo napíš moderátorom, ktorí ťa vedia hneď pustiť."
+)
+EMAIL_VERIFIED = "Overené ✅ Máš rolu **Študent**. Program a ročník si nastav cez /profile."
+EMAIL_OUTSIDER_VERIFIED = (
+    "Overené ✅ Si študent inej fakulty STU, takže máš rolu **Outsider** (nie MTF Študent). Vitaj na serveri!"
+)
+EMAIL_TEACHER_PENDING = "Overené ✅ Žiadosť o rolu **Vyučujúci** dostali moderátori, výsledok ti pošlem správou."
+EMAIL_REVIEW_PENDING = "E-mail overený ✅ Rolu ešte potvrdí moderátor, výsledok ti pošlem správou."
 
 # ------------------------------------------------------------------ reviews (moderators)
 REVIEW_TITLES = {
@@ -159,6 +214,8 @@ MOD_TEACHER_REMOVED = "{member} už nemá rolu **Vyučujúci**."
 MOD_INFO_TITLE = "Člen: {name}"
 MOD_UNLINKED = "Školské konto člena {member} bolo odpojené."
 MOD_NOT_LINKED = "{member} nemá prepojené školské konto."
+MOD_READMIT_DONE = "Blokácia pre {member} bola zrušená – môže sa znova overiť (/verify-email, /verify…)."
+MOD_READMIT_NONE = "{member} nemá aktívnu blokáciu (tombstone) po /forget-me."
 MOD_NOT_VERIFIED = "{member} nie je overený."
 MOD_REVERIFY_DONE = "{member} musí obnoviť overenie do {deadline}."
 MOD_REVERIFY_DM = "Moderátori servera **{guild}** ťa žiadajú o obnovenie overenia do **{deadline}**. Použi /verify."
@@ -185,7 +242,8 @@ SETUP_CHANNEL_MISSING = "⚠️ Kanál `channels.{name}` nie je nastavený alebo
 SETUP_CHANNEL_OK = "✅ Kanál `channels.{name}`: {channel}"
 SETUP_SSO_STATE = "STU (idp.stuba.sk): **{state}** (config: {config}, prepínač: {override}, SAML súbory: {files})"
 SETUP_MICROSOFT_STATE = "Microsoft 365: **{state}** (config: {config}, prepínač: {override}, aplikácia: {app})"
-SETUP_MANUAL_STATE = "Manuálne overenie (snímka): **{state}**"
+SETUP_MANUAL_STATE = "Manuálne overenie (snímka): **{state}** (režim: {mode}, prepínač: {override})"
+SETUP_EMAIL_STATE = "E-mailový kód: **{state}** (config: {config}, prepínač: {override}, LDAP: {ldap})"
 SETUP_SYNCED = "Slash príkazy synchronizované: {n}."
 SETUP_RELOADED = "Konfigurácia znovu načítaná ✅"
 SETUP_RELOAD_FAILED = "Konfigurácia je neplatná, ponechávam pôvodnú:\n```\n{error}\n```"
@@ -200,6 +258,22 @@ ADMIN_MICROSOFT_NO_APP = (
     "\n⚠️ V .env chýba MICROSOFT_CLIENT_ID alebo MICROSOFT_CLIENT_SECRET – prihlásenie cez Microsoft sa nezapne, "
     "kým ich nedoplníš a nereštartuješ bota."
 )
+ADMIN_EMAIL_SET = "Prepínač overenia e-mailom: **{state}**. Aktuálne je overenie e-mailom **{effective}**."
+ADMIN_MANUAL_SET = (
+    "Prepínač manuálneho overenia: **{state}**. Aktuálne je manuálne overenie **{effective}**.\n"
+    "Keď je vypnuté, každý sa musí prihlásiť (Microsoft/STU/e-mail); manuálne zapni len keď treba overiť vyučujúceho."
+)
+ADMIN_LDAP_STATUS = (
+    "**LDAP obohacovanie**\n"
+    "Stav: **{enabled}**\n"
+    "Server: `{url}`\n"
+    "Base DN: `{base_dn}`\n"
+    "Fakulty pre rolu Študent: {faculties} (ostatní študenti STU dostanú rolu Outsider)\n"
+    "Test spojenia: {probe}"
+)
+ADMIN_LDAP_OK = "✅ {detail}"
+ADMIN_LDAP_FAIL = "❌ nedostupné — {detail}\n(Beží sidecar `stuvpn`? `docker-compose --profile ldap up -d stuvpn`)"
+ADMIN_LDAP_DISABLED = "vypnuté v configu (`email.ldap.enabled: false`) – test spojenia sa nespúšťa."
 ADMIN_REVERIFY_STATUS = (
     "Opätovné overenie: **{enabled}** · najbližší termín: **{deadline}** · "
     "členov s termínom: {count} · po termíne: {overdue}"
@@ -209,7 +283,7 @@ ADMIN_REVERIFY_RAN = "Hotovo – pripomienky: {reminded}, vypršané: {expired}.
 # ------------------------------------------------------------------ privacy
 PRIVACY_EXPORT_NOTE = "V prílohe je kópia údajov, ktoré o tebe bot uchováva."
 FORGET_CONFIRM = "Naozaj chceš vymazať všetky svoje údaje? Stratíš overené roly a budeš sa musieť overiť znova.{extra}"
-FORGET_TOMBSTONE = "\nTvoje školské konto sa potom {days} dní nebude dať znova prepojiť (ochrana pred zneužitím)."
+FORGET_TOMBSTONE = "\nTvoje školské konto sa potom {duration} nebude dať znova prepojiť (ochrana pred zneužitím)."
 FORGET_BUTTON = "Áno, vymazať moje údaje"
 FORGET_DONE = "Tvoje údaje boli vymazané a overené roly odobraté."
 
@@ -260,7 +334,8 @@ WEB_MESSAGES: dict[str, tuple[str, str]] = {
     ),
     "tombstoned": (
         "Dočasne zablokované",
-        "Toto školské konto bolo nedávno odpojené. Skús to neskôr alebo kontaktuj moderátorov.",
+        "Toto školské konto bolo nedávno odpojené (napr. cez /forget-me). Blokácia je dočasná – "
+        "skús to neskôr, alebo napíš moderátorom, ktorí ťa vedia hneď znova pustiť.",
     ),
     "rejected": (
         "Overenie sa nepodarilo",
@@ -289,16 +364,23 @@ PRIVACY_TITLE = "Ochrana osobných údajov"
 
 def privacy_notice(cfg: AppConfig) -> list[str]:
     r = cfg.retention
+    e = cfg.email
     contact = cfg.privacy_contact.strip() or "moderátori Discord servera"
     paragraphs = [
         "STUard je bot Discord servera študentov MTF STU. Overuje, že člen má konto STU, a prideľuje roly.",
-        "Overenie prebieha prihlásením školským kontom Microsoft 365 alebo na idp.stuba.sk. Heslo zadávaš "
-        "výhradne na stránke STU; bot ho nikdy nevidí ani neukladá. Z Microsoft 365 bot načíta prihlasovacie "
-        "meno, číslo AIS ID a typ konta (napr. študent), z idp.stuba.sk identifikátor konta a typ príslušnosti.",
+        "Overenie prebieha prihlásením školským kontom Microsoft 365 alebo na idp.stuba.sk, alebo jednorazovým "
+        "kódom zaslaným na školský e-mail (@stuba.sk). Pri prihlásení heslo zadávaš výhradne na stránke STU; bot "
+        "ho nikdy nevidí ani neukladá. Z Microsoft 365 bot načíta prihlasovacie meno, číslo AIS ID a typ konta "
+        "(napr. študent), z idp.stuba.sk identifikátor konta a typ príslušnosti.",
         "Ukladáme: Discord ID, stav overenia a jeho dátumy, jednosmerný kryptografický odtlačok (HMAC) čísla "
         "AIS ID alebo identifikátora konta – aby jedno konto nebolo možné použiť pre viac Discord účtov –, typ "
         "konta alebo príslušnosti a zvolený stupeň, program a ročník. Prihlasovacie meno, AIS ID, meno ani "
-        "e-mail neukladáme v čitateľnej podobe.",
+        "e-mail si neuchovávame natrvalo v čitateľnej podobe.",
+        f"Pri overení e-mailovým kódom posielame kód na tvoj školský e-mail cez službu Resend "
+        f"(poskytovateľ odosielania e-mailov / spracovateľ so sídlom v USA), ktorá môže záznam o odoslanom "
+        f"e-maile (adresu a obsah správy) uchovávať vo svojich logoch až 30 dní. Počas overovania (kým kód "
+        f"nezadáš alebo nevyprší, najviac {e.code_ttl_minutes} min) dočasne uložíme tvoj školský login, e-mail "
+        "a odtlačok kódu; po overení alebo vypršaní sa tieto údaje zmažú.",
         f"Pri manuálnom overení je snímka obrazovky viditeľná iba moderátorom a po rozhodnutí sa vymaže "
         f"(najneskôr po {cfg.manual.expire_days} dňoch). Ak rolu po prihlásení cez Microsoft 365 potvrdzuje "
         "moderátor, vidí v žiadosti aj tvoj školský login a typ konta; aj táto správa sa po rozhodnutí vymaže.",
@@ -306,7 +388,8 @@ def privacy_notice(cfg: AppConfig) -> list[str]:
         "(overenie je dobrovoľné). Záznamy moderácie a dočasná blokácia konta po vymazaní údajov: "
         "oprávnený záujem na ochrane pred zneužitím.",
         f"Uchovávanie: počas členstva na serveri; {r.left_member_days} dní po odchode zo servera; záznamy "
-        f"moderácie {r.audit_days} dní; nedokončené overenia {r.flows_hours} hodín.",
+        f"moderácie {r.audit_days} dní; nedokončené overenia {r.flows_hours} hodín; overovacie e-mailové kódy "
+        f"do vypršania (max {e.code_ttl_minutes} min); záznamy o odoslaných e-mailoch u služby Resend do 30 dní.",
         "Tvoje práva: kópia údajov (/privacy), vymazanie (/forget-me), odvolanie súhlasu kedykoľvek, sťažnosť "
         "na Úrad na ochranu osobných údajov SR.",
         f"Kontakt: {contact}.",

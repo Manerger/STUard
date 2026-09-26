@@ -124,6 +124,17 @@ def test_manual_review_stays_available_with_automatic_logins(bot: FakeBot) -> No
     assert service(bot).manual_available()  # config.example.yaml: manual.mode = always
 
 
+def test_manual_override_forces_state_regardless_of_mode(bot: FakeBot) -> None:
+    verification = service(bot)
+    assert verification.manual_available()  # config.example.yaml: manual.mode = always
+    bot.manual_override = False  # admin: /admin manual off — everyone must log in
+    assert not verification.manual_available()
+    bot.manual_override = True  # admin: /admin manual on — e.g. to verify a teacher
+    assert verification.manual_available()
+    bot.manual_override = None  # back to the config mode
+    assert verification.manual_available()
+
+
 async def complete_ms(
     bot: FakeBot, user_id: int, subject: bytes, employee_type: str | None = "student", login: str = "xnovak@stuba.sk"
 ) -> Outcome:

@@ -109,6 +109,7 @@ class EventsCog(commands.Cog):
             now = now_ts()
             retention = bot.cfg.retention
             await bot.repo.purge_flows(now - retention.flows_hours * 3600)
+            await bot.repo.purge_email_codes(now - retention.flows_hours * 3600)
             await bot.repo.purge_assertions(now)
             await bot.repo.purge_tombstones(now)
             await bot.repo.purge_audit(now - retention.audit_days * DAY)
